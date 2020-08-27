@@ -87,23 +87,37 @@ class GameState:
     def isOver(self):
         if (self.maze[self.agent.pos] == 'W' or self.maze[self.agent.pos] == 'P'):
             return "Lose"
-        elif (self.climbout):
+        elif (self.climbout or
+              (self.agent.wumpus_killed == self.max_wumpus and self.agent.gold=self. golds)):
             return "Win"
         return None
 
     def get_successor(curState, agent_action):
         new_state = curState.copy()
+        "Agent performing grab a gold"
         if (agent_action == Actions.PICK_GOLD):
             new_state.score += 100
             new_state.explored[new_state.agent.pos] = '-'
+            new_state.agent.gold += 1
         elif agent_action in Actions.SHOOT:
-            new_state.score -= 100
+            "Agent Shoots arrows"
+            dx, dy = Actions.SHOOT[agent_action]
+            target = (dx + curState.agent.x, dy + curState.agent.y)
+            if (0 <= target[0] < curState.n and 0 <= target[1] < curState.n):
+                new_state.score -= 100
+                if (curState.maze[target] == 'W'):
+                    new_state.explored[target] = '-'
+                    new_state.maze[target] = '-'
+                    new_state.agent.wumpus_killed += 1
         elif agent_action == Actions.EXIT:
+            "Agent exits the cave"
             if curState.pos != curState.exit:
                 raise Exception('There is no exit here')
             else:
+                new_state.score += 10
                 new_state.climbout = True
         else:
+            "Agent moves in any valid direction"
             next_agent_pos = Actions.getSuccessor(
                 curState.agent.pos, agent_action)
             new_state.explored[next_agent_pos] = curState.maze[next_agent_pos]
@@ -136,7 +150,6 @@ def run():
         if (curState.isOver() != None):
             isRunning = False
         else:
-            print('1')
             for a in actions:
                 curState = GameState.get_successor(curState, a)
                 ui.draw(curState.explored, curState.agent, curState.score)

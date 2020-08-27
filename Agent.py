@@ -59,8 +59,7 @@ class Actions:
         if dx < 0:
             return Directions.WEST
         if dx > 0:
-            return Directions.EAST
-        return Directions.STOP
+            return Directions.EAST 
 
     vectorToDirection = staticmethod(vectorToDirection)
 
