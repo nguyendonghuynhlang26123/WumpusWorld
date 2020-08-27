@@ -40,7 +40,7 @@ class GameGUI:
         return True
 
     def draw(self, explored_set, agent, score=0):
-        pg.time.delay(self.delayTime)
+        #pg.time.delay(self.delayTime)
         self.screen.fill((0, 0, 0))
         for i in range(self.rows):
             for j in range(self.cols):

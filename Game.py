@@ -37,11 +37,11 @@ def process_maze(maze, n):
     for i in range(n):
         for j in range(n):
             if (maze[(i, j)] == 'W'):
-                wumpus.append(maze(i, j))
+                wumpus.append(maze[(i, j)])
             elif (maze[(i, j)] == 'P'):
-                pits.append(maze(i, j))
+                pits.append(maze[(i, j)])
             elif (maze[(i, j)] == 'G'):
-                golds.append(maze(i, j))
+                golds.append(maze[(i, j)])
             elif (maze[(i, j)] == 'A'):
                 exitPos = maze[(i, j)]
 
@@ -73,8 +73,9 @@ class GameState:
         self.score = score
         self.climbout = False
 
-        self.number_of_wumpus = 0
-        self.number_of_golds = 0
+        wumpus_list, pits_list, gold_list, _ = process_maze(maze, n)
+        self.max_wumpus = len(wumpus_list)
+        self.max_gold = len(gold_list)
 
     def copy(self):
         return copy.deepcopy(self)
@@ -88,7 +89,7 @@ class GameState:
         if (self.maze[self.agent.pos] == 'W' or self.maze[self.agent.pos] == 'P'):
             return "Lose"
         elif (self.climbout or
-              (self.agent.wumpus_killed == self.max_wumpus and self.agent.gold=self. golds)):
+              (self.agent.wumpus_killed == self.max_wumpus and self.agent.gold == self.max_gold)):
             return "Win"
         return None
 
@@ -133,6 +134,19 @@ class GameState:
 
     get_possible_actions = staticmethod(get_possible_actions)
 
+    def get_adjs(self, i, j):
+        "Return nodes surrounding i and j"
+        adjs = []
+        if i + 1 < self.n:
+            adjs.append((i + 1, j))
+        if i - 1 >= 0:
+            adjs.append((i - 1, j))
+        if j + 1 < self.n:
+            adjs.append((i, j + 1))
+        if j - 1 >= 0:
+            adjs.append((i, j - 1))
+        return adjs
+
 
 def run():
     n, maze = try_to_load('input.txt')
@@ -141,7 +155,6 @@ def run():
     ui = GameGUI(n, n)
 
     actions = finding_path(curState)
-    print('2')
 
     isRunning = True
     while isRunning:
@@ -153,6 +166,8 @@ def run():
             for a in actions:
                 curState = GameState.get_successor(curState, a)
                 ui.draw(curState.explored, curState.agent, curState.score)
+    print('Done')
 
 
-run()
+if __name__ == "__main__":
+    run()
