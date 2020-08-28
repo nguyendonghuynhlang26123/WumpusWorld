@@ -2,6 +2,7 @@ import itertools
 import re
 from Agent import Agent, Directions, Actions
 from Game import GameState
+from temp import PriorityQueue
 #from utils import *
 
 # a game node
@@ -98,7 +99,7 @@ class KB:
     # check for substitution that make a query true
 
     def check(self, query):
-        KB_temp = [[item2 for item2 in item] for item in self.KB]
+        KB_temp = self.KB.copy()
         KB_temp.append(query)
         KB_temp = sorted(KB_temp, key=lambda x: len(x))
         for item1 in KB_temp:
@@ -121,7 +122,7 @@ class KB:
 
 
 def name(pos: tuple):
-    return str(pos[0]) + ',' + str(pos[1])
+    return str(int(pos[0])) + ',' + str(int(pos[1]))
 
 
 class AIPlayer(Agent):
@@ -260,3 +261,103 @@ def finding_path(initial_state):
     KB = []
     print(GameState.get_possible_actions(initial_state))
     return ['North', 'North', Actions.PICK_GOLD, 'North', 'North', 'East', 'North', 'West']
+
+
+class AIAgentII(AIPlayer):
+    def __init__(self, pos):
+        super(AIAgentII, self).__init__(pos)
+        self.visited = []
+        self.safe_places = []
+        self.KB = KB()
+        self.KB.tell(["~P" + name(pos)])
+        self.KB.tell(["~W" + name(pos)])
+        self.visited.append(pos)
+
+    def is_safe(self, pos):
+        #print("check", pos)
+        return self.KB.check(["P" + name(pos)]) and self.KB.check(["W" + name(pos)])
+
+    def nearest_safe_place(self):
+        dist = []
+        for room in self.safe_places:
+            dist.append(abs(self.pos[0] - room[0]) +
+                        abs(self.pos[1] - room[1]))
+        return self.safe_places[dist.index(min(dist))]
+
+    def get_action(self, state):
+        pos = state.agent.pos
+        adjs = GameState.get_adjs(state, pos)
+
+        "Add KB"
+        if 'S' in state.explored[pos]:
+            self.handle_stench(pos, adjs)
+            self.wumpus_check(pos, adjs)
+        else:
+            self.handle_not_stench(pos, adjs)
+
+        if 'B' in state.explored[pos]:
+            self.handle_breeze(pos, adjs)
+        else:
+            self.handle_not_breeze(pos, adjs)
+
+        "Update safe places"
+        print(pos, '-----', state.exit)
+        for adj, _ in adjs:
+            if (self.is_safe(adj)) and adj not in self.visited and adj not in self.safe_places:
+                print("Check ", adj, "=> Safe")
+                self.safe_places.append(adj)
+            else:
+                print("Check ", adj, "=> UnSafe")
+
+        "Update visited lists"
+        self.visited.append(pos)
+        if (pos in self.safe_places):
+            self.safe_places.remove(pos)
+
+        # print(self.KB.KB)
+        if ('G' in state.explored[pos]):
+            return Actions.PICK_GOLD
+        if (self.safe_places != []):
+            return ucs(state, self.nearest_safe_place())[0]
+
+        "If there is no safe place => Exit"
+        if pos == state.exit:
+            return Actions.EXIT
+        else:
+            self.iLeaving = True
+            print("EXIT", state.exit)
+            return ucs(state, state.exit, chooseVisited=True)[0]
+
+
+def getCostOfActions(state, pos, actions):
+    score = 0
+    for a in actions:
+        pos = Actions.getSuccessor(pos, a)
+        if (state.explored[pos] != '#'):
+            score += 1
+        else:
+            score += 1000
+    return score
+
+
+def ucs(current_state, goal_pos, chooseVisited=False):
+    startpos = current_state.agent.pos
+    factor = -1 if chooseVisited else 1
+    #print(startpos, goal_pos)
+
+    explored = []
+    frontier = PriorityQueue()
+    frontier.push((startpos, []), 0)
+    while not frontier.isEmpty():
+        pos, moves = frontier.pop()
+        if pos == goal_pos:
+            return moves
+        explored.append(pos)
+
+        for adj, action in GameState.get_adjs(current_state, pos):
+            if adj not in explored:
+                newMoves = moves + [action]
+                frontier.update(
+                    (adj, newMoves), factor * getCostOfActions(
+                        current_state, startpos, newMoves)
+                )

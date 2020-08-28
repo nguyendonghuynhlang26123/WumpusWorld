@@ -23,11 +23,12 @@ class Actions:
         Directions.EAST: (0, 1),
         Directions.WEST: (0, -1)
     }
+
     SHOOT = {
         "Shoot North": (1, 0),
         "Shoot South": (-1, 0),
-        "Shoot East":  (0, 1),
-        "Shoot West":   (0, -1)
+        "Shoot East": (0, 1),
+        "Shoot West": (0, -1)
     }
 
     PICK_GOLD = 2
@@ -36,6 +37,10 @@ class Actions:
     _directionsAsList = _directions.items()
 
     TOLERANCE = 0.001
+
+    def shoot(Direction):
+        return "Shoot " + Direction
+    shoot = staticmethod(shoot)
 
     def reverseDirection(action):
         if action == Directions.NORTH:
@@ -94,14 +99,16 @@ class Actions:
 class Agent:
     def __init__(self, pos):
         self.pos = pos
-        self.actions = []
+        self.actions = ['North', 'North', Actions.PICK_GOLD,
+                        'North', 'North', 'East', 'North', 'West']
+        #self.actions = []
         self.dir = Directions.EAST
         self.gold = 0
         self.wumpus_killed = 0
         self.iLeaving = False
 
-    def get_actions(self):
-        return self.actions
+    def get_action(self, gamestate):
+        return self.actions.pop(0)
 
     def move(self, direction):
         self.dir = direction

@@ -11,7 +11,7 @@ def get_img(im, size=(WIDTH, WIDTH)):
 class GameGUI:
     def __init__(self, rows, cols):
         pg.init()
-        self.delayTime = 1000
+        self.delayTime = 000
         self.rows = rows
         self.cols = cols
         self.graphic_width = self.rows * WIDTH
@@ -40,7 +40,7 @@ class GameGUI:
         return True
 
     def draw(self, explored_set, agent, score=0):
-        #pg.time.delay(self.delayTime)
+        pg.time.delay(self.delayTime)
         self.screen.fill((0, 0, 0))
         for i in range(self.rows):
             for j in range(self.cols):
@@ -56,7 +56,10 @@ class GameGUI:
     def draw_room(self, pos: tuple, explored_set):
         i, j = pos
         world_pos = (j*WIDTH, (self.cols - 1 - i)*WIDTH)
-        self.screen.blit(self.imgs[explored_set[pos]], world_pos)
+        try:
+            self.screen.blit(self.imgs[explored_set[pos]], world_pos)
+        except:
+            raise Exception(explored_set)
 
     def draw_agent(self, agent):
         i, j = agent.pos

@@ -1,7 +1,7 @@
-from Agent import Agent, Actions
+from Agent import Agent, Actions, Directions
 import os
 import copy
-from logic import finding_path
+import logic
 from GUI import GameGUI
 
 
@@ -49,16 +49,25 @@ def process_maze(maze, n):
 
 
 class GameState:
-    def initial_state(maze, n):
+    def initial_state(maze, n, agent_type="Agent"):
         explored_set = dict({})
         for i in range(n):
             for j in range(n):
-                explored_set[(i, j)] = '#'
+                explored_set[(i, j)] = '#'  # Unexplored == #
 
+        agent = None
         for pos in maze.keys():
             if maze[pos] == 'A':
                 explored_set[pos] = '-'  # Mark start place is visited
-                agent = Agent(pos)
+                if agent_type == "Agent":
+                    agent = Agent(pos)
+                else:
+                    print("voov")
+                    try:
+                        from logic import AIAgentII
+                        agent = AIAgentII(pos)
+                    except:
+                        raise Exception('Error')
 
         return GameState(explored_set, maze, n, agent, pos)
     initial_state = staticmethod(initial_state)
@@ -121,7 +130,8 @@ class GameState:
             "Agent moves in any valid direction"
             next_agent_pos = Actions.getSuccessor(
                 curState.agent.pos, agent_action)
-            new_state.explored[next_agent_pos] = curState.maze[next_agent_pos]
+            if new_state.explored[next_agent_pos] == '#':  # This room is not visited
+                new_state.explored[next_agent_pos] = curState.maze[next_agent_pos]
 
             new_state.agent.move(agent_action)
             new_state.score -= 10
@@ -134,28 +144,29 @@ class GameState:
 
     get_possible_actions = staticmethod(get_possible_actions)
 
-    def get_adjs(self, i, j):
-        "Return nodes surrounding i and j"
+    def get_adjs(state, pos):
+        "Return nodes surrounding pos"
+        i, j = pos
         adjs = []
-        if i + 1 < self.n:
-            adjs.append((i + 1, j))
+        if i + 1 < state.n:
+            adjs.append(((i + 1, j), Directions.NORTH))
         if i - 1 >= 0:
-            adjs.append((i - 1, j))
-        if j + 1 < self.n:
-            adjs.append((i, j + 1))
+            adjs.append(((i - 1, j), Directions.SOUTH))
+        if j + 1 < state.n:
+            adjs.append(((i, j + 1), Directions.EAST))
         if j - 1 >= 0:
-            adjs.append((i, j - 1))
+            adjs.append(((i, j - 1), Directions.WEST))
         return adjs
+    get_adjs = staticmethod(get_adjs)
 
 
 def run():
     n, maze = try_to_load('input.txt')
 
-    curState = GameState.initial_state(maze, n)
+    curState = GameState.initial_state(maze, n, "AIAgentII")
     ui = GameGUI(n, n)
 
-    actions = finding_path(curState)
-
+    #actions = logic.finding_path(curState)
     isRunning = True
     while isRunning:
         isRunning = ui.checkEvent()
@@ -163,9 +174,9 @@ def run():
         if (curState.isOver() != None):
             isRunning = False
         else:
-            for a in actions:
-                curState = GameState.get_successor(curState, a)
-                ui.draw(curState.explored, curState.agent, curState.score)
+            next_act = curState.agent.get_action(curState)
+            curState = GameState.get_successor(curState, next_act)
+            ui.draw(curState.explored, curState.agent, curState.score)
     print('Done')
 
 
