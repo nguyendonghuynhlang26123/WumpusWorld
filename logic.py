@@ -152,6 +152,7 @@ class AIPlayer(Agent.Agent):
             else:
                 self.handle_not_breeze(current_node)
             self.safe_check(current_node)
+
             if glitter:  # gold collect
                 self.moves.insert(0,"g")
         move = self.moves.pop(0)
@@ -182,11 +183,10 @@ class AIPlayer(Agent.Agent):
             return gamestate.get_successor(current_node,Agent.Actions.EXIT)
 
 
-
     def clear_base(self):
-        remove_list=[]
+        remove_list = []
         for item in self.KB.KB:
-            if item[0][0]=="W" or item[0][1]=="W":  # remove clause with W or ~W
+            if item[0][0] == "W" or item[0][1] == "W":  # remove clause with W or ~W
                 remove_list.append(item)
         for item in remove_list:
             self.KB.KB.remove(item)
@@ -195,7 +195,7 @@ class AIPlayer(Agent.Agent):
         row = current_node.row
         col = current_node.col
         if self.arrow > 0:
-            if current_node.adj[1]!="W":
+            if current_node.adj[1] != "W":
                 if self.KB.check(["W" + str(row - 1) + "," + str(col)]) and self.KB.check(
                         ["~S" + str(row - 1) + "," + str(col + 1)]) or self.KB.check(
                         ["W" + str(row + 1) + "," + str(col)]) and self.KB.check(
@@ -221,18 +221,20 @@ class AIPlayer(Agent.Agent):
                     self.kill_wumpus(Agent.Directions.SOUTH)
 
     def kill_wumpus(self, dir):
-        self.moves=[]
+        self.moves = []
         if dir == Agent.Directions.NORTH:
-            self.moves.insert(0,"su")
+            self.moves.insert(0, "su")
         if dir == Agent.Directions.RIGHT:
-            self.moves.insert(0,"sr")
+            self.moves.insert(0, "sr")
         if dir == Agent.Directions.SOUTH:
-            self.moves.insert(0,"sd")
+            self.moves.insert(0, "sd")
         if dir == Agent.Directions.LEFT:
-            self.moves.insert(0,"sl")
+            self.moves.insert(0, "sl")
 
     def safe_check(self, current_node):
-        if current_node.adj[1]!="W" and current_node.adj[0] not in self.states.visited_node and current_node.adj[1] not in self.states.unvisited_safe_states:
+        if current_node.adj[1]!="W" and current_node.adj[1] not in self.states.visited_node and current_node.adj[1] not in self.states.unvisited_safe_node:
+            if self.KB.check(["P" + current_node.adj[1]]) and self.KB.check(["W" + current_node.adj[1]]):
+                self.states.unvisited_safe_node.append(current_node.adj[1])
 
 def finding_path(initial_state):
     from Game import GameState

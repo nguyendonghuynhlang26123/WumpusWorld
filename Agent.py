@@ -59,7 +59,7 @@ class Actions:
         if dx < 0:
             return Directions.WEST
         if dx > 0:
-            return Directions.EAST 
+            return Directions.EAST
 
     vectorToDirection = staticmethod(vectorToDirection)
 
@@ -96,6 +96,9 @@ class Agent:
         self.pos = pos
         self.actions = []
         self.dir = Directions.EAST
+        self.gold = 0
+        self.wumpus_killed = 0
+        self.iLeaving = False
 
     def get_actions(self):
         return self.actions
