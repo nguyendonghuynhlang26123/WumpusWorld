@@ -232,9 +232,39 @@ class AIPlayer(Agent.Agent):
             self.moves.insert(0, "sl")
 
     def safe_check(self, current_node):
-        if current_node.adj[1]!="W" and current_node.adj[1] not in self.states.visited_node and current_node.adj[1] not in self.states.unvisited_safe_node:
-            if self.KB.check(["P" + current_node.adj[1]]) and self.KB.check(["W" + current_node.adj[1]]):
-                self.states.unvisited_safe_node.append(current_node.adj[1])
+        for i in range(0,4):
+            if current_node.adj[i]!="W" and current_node.adj[i] not in self.states.visited_node and current_node.adj[i] not in self.states.unvisited_safe_node:
+                if self.KB.check(["P" + current_node.adj[i]]) and self.KB.check(["W" + current_node.adj[i]]):
+                    self.states.unvisited_safe_node.append(current_node.adj[i])
+
+    def handle_bump(self):
+        pass
+
+    def handle_stench(self, current_node):
+        sentence=[]
+        for i in range(0,4):
+            if current_node.adj[i] not in self.states.visited_node and current_node.adj[i]!="W":
+                sentence.append("W"+current_node.adj[i])
+        self.KB.tell(sentence)
+        self.KB.tell(["S"+current_node.name])
+
+    def handle_breeze(self, current_node):
+        sentence=[]
+        for i in range(0,4):
+            if current_node.adj[i] not in self.states.visited_node and current_node.adj[i]!="W":
+                sentence.append("P"+current_node.adj[i])
+        self.KB.tell(sentence)
+        self.KB.tell(["B"+current_node.name])
+
+    def handle_not_breeze(self, current_node):
+        for i in range(0, 4):
+            if current_node.adj[i] not in self.states.visited_node and current_node.adj[i] != "W":
+                self.KB.tell(["~P"+current_node.adj[i]])
+
+    def handle_not_stench(self, current_node):
+        for i in range(0, 4):
+            if current_node.adj[i] not in self.states.visited_node and current_node.adj[i] != "W":
+                self.KB.tell(["~W"+current_node.adj[i]])
 
 def finding_path(initial_state):
     from Game import GameState
