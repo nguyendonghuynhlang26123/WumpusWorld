@@ -2,7 +2,7 @@ import itertools
 import re
 from Agent import Agent, Directions, Actions
 from Game import GameState
-from temp import PriorityQueue
+from util import PriorityQueue
 #from utils import *
 
 # a game node
@@ -326,7 +326,7 @@ class AIAgentII(AIPlayer):
         else:
             self.iLeaving = True
             print("EXIT", state.exit)
-            return ucs(state, state.exit, chooseVisited=True)[0]
+            return ucs(state, state.exit)[0]
 
 
 def getCostOfActions(state, pos, actions):

@@ -58,6 +58,7 @@ class GameState:
         agent = None
         for pos in maze.keys():
             if maze[pos] == 'A':
+                exitPos = pos
                 explored_set[pos] = '-'  # Mark start place is visited
                 if agent_type == "Agent":
                     agent = Agent(pos)
@@ -69,7 +70,7 @@ class GameState:
                     except:
                         raise Exception('Error')
 
-        return GameState(explored_set, maze, n, agent, pos)
+        return GameState(explored_set, maze, n, agent, exitPos)
     initial_state = staticmethod(initial_state)
 
     def __init__(self, explored_set, maze, n, agent, exitPos, score=0):
@@ -121,7 +122,7 @@ class GameState:
                     new_state.agent.wumpus_killed += 1
         elif agent_action == Actions.EXIT:
             "Agent exits the cave"
-            if curState.pos != curState.exit:
+            if curState.agent.pos != curState.exit:
                 raise Exception('There is no exit here')
             else:
                 new_state.score += 10
@@ -165,6 +166,12 @@ def run():
 
     curState = GameState.initial_state(maze, n, "AIAgentII")
     ui = GameGUI(n, n)
+    result = dict({
+        'Result': '',
+        'Score': 0,
+        'Gold Picked': 0,
+        'Wumpus Killed': 0
+    })
 
     #actions = logic.finding_path(curState)
     isRunning = True
@@ -173,11 +180,17 @@ def run():
 
         if (curState.isOver() != None):
             isRunning = False
+            result['Score'] = curState.score
+            result['Result'] = curState.isOver()
+            result['Wumpus Killed'] = curState.agent.wumpus_killed
+            result['Gold Picked'] = curState.agent.gold
         else:
             next_act = curState.agent.get_action(curState)
             curState = GameState.get_successor(curState, next_act)
             ui.draw(curState.explored, curState.agent, curState.score)
-    print('Done')
+    print('-------------------------')
+    print("\n".join([str(e) + " : " + str(result[e]) for e in result]))
+    print('-------------------------')
 
 
 if __name__ == "__main__":
