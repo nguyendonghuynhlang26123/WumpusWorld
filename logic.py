@@ -1,79 +1,80 @@
 import itertools
 import re
-import Agent
+from Agent import Agent, Directions, Actions
+from Game import GameState
 #from utils import *
 
 # a game node
 
 
-class Node:
-    def __init__(self, row, col):
-        self.row = row
-        self.col = col
-        self.name = str(row)+","+str(col)
-        self.adj = ["", "", "", ""]  # up, right, down, left (clockwise)
+# class Node:
+#     def __init__(self, row, col):
+#         self.row = row
+#         self.col = col
+#         self.name = str(row)+","+str(col)
+#         self.adj = ["", "", "", ""]  # up, right, down, left (clockwise)
 
-    def __repr__(self):
-        return ("(Name : " + str(self.name) + " , " +
-                " left : " + self.adj[3] + " , " + " Right : " + self.adj[1] + " , " +
-                " Up : " + self.adj[0] + " , " + " Down : " + self.adj[2] + " , " + ")")
+#     def __repr__(self):
+#         return ("(Name : " + str(self.name) + " , " +
+#                 " left : " + self.adj[3] + " , " + " Right : " + self.adj[1] + " , " +
+#                 " Up : " + self.adj[0] + " , " + " Down : " + self.adj[2] + " , " + ")")
 
 # character state
 
 
-class Player:
-    def __init__(self, node, dir):
-        self.current_node = node
-        self.current_direction = dir
-        self.gold = 0
-        self.wumpus_killed = 0
-        self.iLeaving = False
+# class Player:
+#     def __init__(self, node, dir):
+#         self.current_node = node
+#         self.current_direction = dir
+#         self.gold = 0
+#         self.wumpus_killed = 0
+#         self.iLeaving = False
 
-    def move(self, nodes):
-        if nodes[self.current_node.adj[self.current_direction]] != "W":  # Direction node is not wall
-            self.current_node = nodes[self.current_node.adj[self.current_direction]]
+#     def move(self, nodes):
+#         if nodes[self.current_node.adj[self.current_direction]] != "W":  # Direction node is not wall
+#             self.current_node = nodes[self.current_node.adj[self.current_direction]]
 
-    def turn(self, dir):
-        self.current_direction = (self.current_direction+dir) % 4
+#     def turn(self, dir):
+#         self.current_direction = (self.current_direction+dir) % 4
 
-    def __repr__(self):
-        return ("Current Node : " + str(self.current_node.name) + " , " +
-                "Current Direction : " + str(self.current_direction))
+#     def __repr__(self):
+#         return ("Current Node : " + str(self.current_node.name) + " , " +
+#                 "Current Direction : " + str(self.current_direction))
 
 
-class Game_State:
-    def __init__(self):
-        self.nodes = dict()
-        self.visited_node = []
-        self.unvisited_safe_node = []
-        self.max_row = -1
-        self.max_col = -1
+# class Game_State:
+#     def __init__(self):
+#         self.nodes = dict()
+#         self.visited_node = []
+#         self.unvisited_safe_node = []
+#         self.max_row = -1
+#         self.max_col = -1
 
-    def add_node(self, node):
-        # update adjacent nodes
-        if self.max_col != -1 and node.col == self.max_col:
-            node.adj[1] = "W"  # Meet wall on the right
-        else:
-            node.adj[1] = str(node.row)+","+str(node.col+1)
-        if node.col == 1:
-            node.adj[3] = "W"  # Meet left wall
-        else:
-            node.adj[3] = str(node.row)+","+str(node.col-1)
-        if self.max_row != -1 and node.row == self.max_row:
-            node.adj[0] = "W"  # Meet upper wall
-        else:
-            node.adj[0] = str(node.row+1)+","+str(node.col)
-        if node.row == 1:
-            node.adj[2] = "W"  # Meet bottom wall
-        else:
-            node.adj[2] = str(node.row-1)+","+str(node.col)
-        self.nodes[node.name] = node
-        if node.name not in self.visited_node:
-            self.visited_node.append(node.name)
+#     def add_node(self, node):
+#         # update adjacent nodes
+#         if self.max_col != -1 and node.col == self.max_col:
+#             node.adj[1] = "W"  # Meet wall on the right
+#         else:
+#             node.adj[1] = str(node.row)+","+str(node.col+1)
+#         if node.col == 1:
+#             node.adj[3] = "W"  # Meet left wall
+#         else:
+#             node.adj[3] = str(node.row)+","+str(node.col-1)
+#         if self.max_row != -1 and node.row == self.max_row:
+#             node.adj[0] = "W"  # Meet upper wall
+#         else:
+#             node.adj[0] = str(node.row+1)+","+str(node.col)
+#         if node.row == 1:
+#             node.adj[2] = "W"  # Meet bottom wall
+#         else:
+#             node.adj[2] = str(node.row-1)+","+str(node.col)
+#         self.nodes[node.name] = node
+#         if node.name not in self.visited_node:
+#             self.visited_node.append(node.name)
 
-    def __repr__(self):
-        return ("Nodes : " + str(self.nodes.keys()) + " , " +
-                " Visited Nodes : " + str(self.visited_node))
+#     def __repr__(self):
+#         return ("Nodes : " + str(self.nodes.keys()) + " , " +
+#                 " Visited Nodes : " + str(self.visited_node))
 
 
 class KB:
@@ -119,69 +120,60 @@ class KB:
                 self.KB.remove(item1)
 
 
-class AIPlayer(Agent.Agent):
-    def __init__(self, arrow_num):
-        self.states = Game_State()
-        self.states.add_node(Node(1, 1))
-        self.player = Player("1,1", 1)
+def name(pos: tuple):
+    return str(pos[0]) + ',' + str(pos[1])
+
+
+class AIPlayer(Agent):
+    def __init__(self, pos):
+        super().__init__(pos)
+        # self.states = Game_State()
+        # self.states.add_node((0, 0))
+        self.visited_node = []
+        self.visited_node.append((0, 0))
+        self.unvisited_safe_node = []
+        #self.player = Player("1,1", 1)
+
         self.KB = KB()
-        self.KB.tell(["~P1,1"])
-        self.KB.tell(["~W1,1"])
-        self.arrow = arrow_num
-        self.exit = False
-        self.moves = []
+        self.KB.tell(["~P" + name(pos)])
+        self.KB.tell(["~W" + name(pos)])
+
+        self.actions = []
         #self.killing_wumpus = False
 
     def get_action(self, gamestate, stench, breeze, glitter, bump, scream):
-        if bump:  # walk into wall
-            self.handle_bump()
-        current_node = self.states.nodes[self.player.current_node]
-        # starting with wumpus next to you so you shoot arrow to make sure the first step is not wumpus
+        "Gamestate.agent.pos: return (i,j) as coordinate of agent"
+        pos = gamestate.agent.pos
+        "Get_adjs return adjs of parameter pos. "
+        "Return: a tuple ((i,j), <direction of this coordinate comparing to pos>)"
+        "I.e: pos = (5,5) => adj on the north: ((4,5), 'North') "
+        adjs = GameState.get_adjs(gamestate, pos)
+
+        # if bump:  # walk into wall
+        #     self.handle_bump()
 
         if scream:  # A wumpus is shot
             pass
             # more...
-        if not self.exit:
+        if not self.iLeaving:
             if stench:
-                self.handle_stench(current_node)
-                self.wumpus_check(current_node)
+                "Handle stench"
+                self.handle_stench(pos, adjs)
+                "Handle wumpus"
+                self.wumpus_check(pos, adjs)
             else:
-                self.handle_not_stench(current_node)
+                self.handle_not_stench(pos, adjs)
             if breeze:
-                self.handle_breeze(current_node)
+                self.handle_breeze(pos, adjs)
             else:
-                self.handle_not_breeze(current_node)
-            self.safe_check(current_node)
+                self.handle_not_breeze(pos, adjs)
+            "Safe check:"
+            self.safe_check(pos, adjs)
 
             if glitter:  # gold collect
-                self.moves.insert(0,"g")
-        move = self.moves.pop(0)
-        if move == "l":
-            #return gamestate.get_successor(current_node)
-            # return GO WEST
-            pass
-        elif move == "r":
-            #return GO EAST
-            pass
-        elif move == "u":
-            # return GO NORTH
-            pass
-        elif move == "d":
-            # return GO SOUTH
-            pass
-        elif move == "su":
-            return gamestate.get_successor(current_node,Agent.Actions.SHOOT(Agent.Directions.NORTH))
-        elif move == "sr":
-            return gamestate.get_successor(current_node,Agent.Actions.SHOOT(Agent.Directions.EAST))
-        elif move == "sl":
-            return gamestate.get_successor(current_node,Agent.Actions.SHOOT(Agent.Directions.WEST))
-        elif move == "sd":
-            return gamestate.get_successor(current_node,Agent.Actions.SHOOT(Agent.Directions.SOUTH))
-        elif move == "g":
-            return gamestate.get_successor(current_node,Agent.Actions.PICK_GOLD)
-        elif move == "e":
-            return gamestate.get_successor(current_node,Agent.Actions.EXIT)
+                self.actions.insert(0, Actions.PICK_GOLD)
 
+        return self.actions.pop(0)
 
     def clear_base(self):
         remove_list = []
@@ -191,83 +183,80 @@ class AIPlayer(Agent.Agent):
         for item in remove_list:
             self.KB.KB.remove(item)
 
-    def wumpus_check(self, current_node):
-        row = current_node.row
-        col = current_node.col
-        if self.arrow > 0:
-            if current_node.adj[1] != "W":
-                if self.KB.check(["W" + str(row - 1) + "," + str(col)]) and self.KB.check(
-                        ["~S" + str(row - 1) + "," + str(col + 1)]) or self.KB.check(
-                        ["W" + str(row + 1) + "," + str(col)]) and self.KB.check(
-                        ["~S" + str(row + 1) + "," + str(col + 1)]):
-                    self.kill_wumpus(Agent.Directions.RIGHT)
-            if current_node.adj[0] != "W":
-                if self.KB.check(["W" + str(row) + "," + str(col - 1)]) and self.KB.check(
-                        ["~S" + str(row + 1) + "," + str(col - 1)]) or self.KB.check(
-                        ["W" + str(row) + "," + str(col + 1)]) and self.KB.check(
-                        ["~S" + str(row + 1) + "," + str(col + 1)]):
-                    self.kill_wumpus(Agent.Directions.NORTH)
-            if current_node.adj[3] != "W":
-                if self.KB.check(["W" + str(row - 1) + "," + str(col)]) and self.KB.check(
-                        ["~S" + str(row - 1) + "," + str(col - 1)]) or self.KB.check(
-                        ["W" + str(row + 1) + "," + str(col)]) and self.KB.check(
-                        ["~S" + str(row + 1) + "," + str(col - 1)]):
-                    self.kill_wumpus(Agent.Directions.LEFT)
-            if current_node.adj[2] != "W":
-                if self.KB.check(["W" + str(row) + "," + str(col - 1)]) and self.KB.check(
-                        ["~S" + str(row - 1) + "," + str(col - 1)]) or self.KB.check(
-                        ["W" + str(row) + "," + str(col + 1)]) and self.KB.check(
-                        ["~S" + str(row - 1) + "," + str(col + 1)]):
-                    self.kill_wumpus(Agent.Directions.SOUTH)
+    def wumpus_check(self, pos, adjs):
+        row = pos[0]
+        col = pos[1]
+
+        if ((row, col + 1), Directions.EAST) in adjs:
+            if self.KB.check(["W" + str(row - 1) + "," + str(col)]) and self.KB.check(
+                    ["~S" + str(row - 1) + "," + str(col + 1)]) or self.KB.check(
+                    ["W" + str(row + 1) + "," + str(col)]) and self.KB.check(
+                    ["~S" + str(row + 1) + "," + str(col + 1)]):
+                self.kill_wumpus(Directions.EAST)
+
+        if ((row + 1, col), Directions.NORTH) in adjs:
+            if self.KB.check(["W" + str(row) + "," + str(col - 1)]) and self.KB.check(
+                    ["~S" + str(row + 1) + "," + str(col - 1)]) or self.KB.check(
+                    ["W" + str(row) + "," + str(col + 1)]) and self.KB.check(
+                    ["~S" + str(row + 1) + "," + str(col + 1)]):
+                self.kill_wumpus(Directions.NORTH)
+
+        if ((row, col - 1), Directions.WEST) in adjs:
+            if self.KB.check(["W" + str(row - 1) + "," + str(col)]) and self.KB.check(
+                    ["~S" + str(row - 1) + "," + str(col - 1)]) or self.KB.check(
+                    ["W" + str(row + 1) + "," + str(col)]) and self.KB.check(
+                    ["~S" + str(row + 1) + "," + str(col - 1)]):
+                self.kill_wumpus(Directions.WEST)
+
+        if ((row - 1, col), Directions.SOUTH) in adjs:
+            if self.KB.check(["W" + str(row) + "," + str(col - 1)]) and self.KB.check(
+                    ["~S" + str(row - 1) + "," + str(col - 1)]) or self.KB.check(
+                    ["W" + str(row) + "," + str(col + 1)]) and self.KB.check(
+                    ["~S" + str(row - 1) + "," + str(col + 1)]):
+                self.kill_wumpus(Directions.SOUTH)
 
     def kill_wumpus(self, dir):
-        self.moves = []
-        if dir == Agent.Directions.NORTH:
-            self.moves.insert(0, "su")
-        if dir == Agent.Directions.RIGHT:
-            self.moves.insert(0, "sr")
-        if dir == Agent.Directions.SOUTH:
-            self.moves.insert(0, "sd")
-        if dir == Agent.Directions.LEFT:
-            self.moves.insert(0, "sl")
+        self.actions = []
+        self.actions.insert(0, Actions.shoot(dir))
 
-    def safe_check(self, current_node):
-        for i in range(0,4):
-            if current_node.adj[i]!="W" and current_node.adj[i] not in self.states.visited_node and current_node.adj[i] not in self.states.unvisited_safe_node:
-                if self.KB.check(["P" + current_node.adj[i]]) and self.KB.check(["W" + current_node.adj[i]]):
-                    self.states.unvisited_safe_node.append(current_node.adj[i])
+    def safe_check(self, pos, adjs):
+        for adj, _ in adjs:
+            if adj not in self.visited_node and adj not in self.unvisited_safe_node:
+                if self.KB.check(["P" + name(adj)]) and self.KB.check(["W" + name(adj)]):
+                    self.unvisited_safe_node.append(name(adj))
 
     def handle_bump(self):
         pass
 
-    def handle_stench(self, current_node):
-        sentence=[]
-        for i in range(0,4):
-            if current_node.adj[i] not in self.states.visited_node and current_node.adj[i]!="W":
-                sentence.append("W"+current_node.adj[i])
+    def handle_stench(self, cur_pos, adjs):
+        sentence = []
+        for adj, _ in adjs:
+            if adj not in self.visited_node:
+                sentence.append("W"+name(adj))
+
         self.KB.tell(sentence)
-        self.KB.tell(["S"+current_node.name])
+        self.KB.tell(["S"+name(cur_pos)])
 
-    def handle_breeze(self, current_node):
-        sentence=[]
-        for i in range(0,4):
-            if current_node.adj[i] not in self.states.visited_node and current_node.adj[i]!="W":
-                sentence.append("P"+current_node.adj[i])
+    def handle_breeze(self, pos, adjs):
+        sentence = []
+        for adj, _ in adjs:
+            if adj not in self.visited_node:
+                sentence.append("P"+name(adj))
         self.KB.tell(sentence)
-        self.KB.tell(["B"+current_node.name])
+        self.KB.tell(["B"+name(pos)])
 
-    def handle_not_breeze(self, current_node):
-        for i in range(0, 4):
-            if current_node.adj[i] not in self.states.visited_node and current_node.adj[i] != "W":
-                self.KB.tell(["~P"+current_node.adj[i]])
+    def handle_not_breeze(self, pos, adjs):
+        for adj, _ in adjs:
+            if adj not in self.visited_node:
+                self.KB.tell(["~P"+name(adj)])
 
-    def handle_not_stench(self, current_node):
-        for i in range(0, 4):
-            if current_node.adj[i] not in self.states.visited_node and current_node.adj[i] != "W":
-                self.KB.tell(["~W"+current_node.adj[i]])
+    def handle_not_stench(self, pos, adjs):
+        for adj, _ in adjs:
+            if adj not in self.visited_node:
+                self.KB.tell(["~W"+name(adj)])
+
 
 def finding_path(initial_state):
-    from Game import GameState
     KB = []
     print(GameState.get_possible_actions(initial_state))
-    return ['North', 'North', 'North', 'North', 'East', 'North', 'West']
+    return ['North', 'North', Actions.PICK_GOLD, 'North', 'North', 'East', 'North', 'West']
