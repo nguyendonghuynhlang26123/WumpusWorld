@@ -120,42 +120,28 @@ class KB:
 
 
 class AIPlayer(Agent.Agent):
-    def __init__(self, gold, wumpus_num,arrow_num):
+    def __init__(self, arrow_num):
         self.states = Game_State()
         self.states.add_node(Node(1, 1))
         self.player = Player("1,1", 1)
         self.KB = KB()
         self.KB.tell(["~P1,1"])
         self.KB.tell(["~W1,1"])
-        self.wumpus = wumpus_num
-        self.wumpus_dir = []
         self.arrow = arrow_num
-        self.gold_left = gold
         self.exit = False
         self.moves = []
         #self.killing_wumpus = False
-        self.start_stench = False
 
-    def get_action(self, stench, breeze, glitter, bump, scream):
+    def get_action(self, gamestate, stench, breeze, glitter, bump, scream):
         if bump:  # walk into wall
             self.handle_bump()
         current_node = self.states.nodes[self.player.current_node]
         # starting with wumpus next to you so you shoot arrow to make sure the first step is not wumpus
-        if current_node.name == "1,1" and stench and not breeze and not self.arrow_shot and not self.exit:
-            self.arrow_shot = True
-            self.start_stench = True
-            return Agent.Action.SHOOT
+
         if scream:  # A wumpus is shot
-            self.start_stench = False
-            self.clear_base()
-            self.killing_wumpus = False
-            self.wumpus_killed = True
+            pass
             # more...
-        elif self.start_stench:  # Stench at the starting node but no scream after shoot an arrow in starting direction
-            self.start_stench = False
-            self.KB.tell(["W2,1"])
-            self.KB.tell(["~W1,2"])
-        if not self.exit and not self.killing_wumpus:
+        if not self.exit:
             if stench:
                 self.handle_stench(current_node)
                 self.wumpus_check(current_node)
@@ -166,14 +152,36 @@ class AIPlayer(Agent.Agent):
             else:
                 self.handle_not_breeze(current_node)
             self.safe_check(current_node)
-            if glitter and self.gold_left == 0:  # all gold collected
-                self.exit = True
-                # Search UCS...
-            elif len(self.states.unvisited_safe_node) > 0:  # search if all wumpus killed
-                # Search UCS...
-                pass
-            else:
-                self.exit=True
+            if glitter:  # gold collect
+                self.moves.insert(0,"g")
+        move = self.moves.pop(0)
+        if move == "l":
+            #return gamestate.get_successor(current_node)
+            # return GO WEST
+            pass
+        elif move == "r":
+            #return GO EAST
+            pass
+        elif move == "u":
+            # return GO NORTH
+            pass
+        elif move == "d":
+            # return GO SOUTH
+            pass
+        elif move == "su":
+            return gamestate.get_successor(current_node,Agent.Actions.SHOOT(Agent.Directions.NORTH))
+        elif move == "sr":
+            return gamestate.get_successor(current_node,Agent.Actions.SHOOT(Agent.Directions.EAST))
+        elif move == "sl":
+            return gamestate.get_successor(current_node,Agent.Actions.SHOOT(Agent.Directions.WEST))
+        elif move == "sd":
+            return gamestate.get_successor(current_node,Agent.Actions.SHOOT(Agent.Directions.SOUTH))
+        elif move == "g":
+            return gamestate.get_successor(current_node,Agent.Actions.PICK_GOLD)
+        elif move == "e":
+            return gamestate.get_successor(current_node,Agent.Actions.EXIT)
+
+
 
     def clear_base(self):
         remove_list=[]
@@ -192,25 +200,25 @@ class AIPlayer(Agent.Agent):
                         ["~S" + str(row - 1) + "," + str(col + 1)]) or self.KB.check(
                         ["W" + str(row + 1) + "," + str(col)]) and self.KB.check(
                         ["~S" + str(row + 1) + "," + str(col + 1)]):
-                    self.kill_wumpus(1)
+                    self.kill_wumpus(Agent.Directions.RIGHT)
             if current_node.adj[0] != "W":
                 if self.KB.check(["W" + str(row) + "," + str(col - 1)]) and self.KB.check(
                         ["~S" + str(row + 1) + "," + str(col - 1)]) or self.KB.check(
                         ["W" + str(row) + "," + str(col + 1)]) and self.KB.check(
                         ["~S" + str(row + 1) + "," + str(col + 1)]):
-                    self.kill_wumpus(0)
+                    self.kill_wumpus(Agent.Directions.NORTH)
             if current_node.adj[3] != "W":
                 if self.KB.check(["W" + str(row - 1) + "," + str(col)]) and self.KB.check(
                         ["~S" + str(row - 1) + "," + str(col - 1)]) or self.KB.check(
                         ["W" + str(row + 1) + "," + str(col)]) and self.KB.check(
                         ["~S" + str(row + 1) + "," + str(col - 1)]):
-                    self.kill_wumpus(3)
+                    self.kill_wumpus(Agent.Directions.LEFT)
             if current_node.adj[2] != "W":
                 if self.KB.check(["W" + str(row) + "," + str(col - 1)]) and self.KB.check(
                         ["~S" + str(row - 1) + "," + str(col - 1)]) or self.KB.check(
                         ["W" + str(row) + "," + str(col + 1)]) and self.KB.check(
                         ["~S" + str(row - 1) + "," + str(col + 1)]):
-                    self.kill_wumpus(2)
+                    self.kill_wumpus(Agent.Directions.SOUTH)
 
     def kill_wumpus(self, dir):
         self.moves=[]
@@ -224,7 +232,7 @@ class AIPlayer(Agent.Agent):
             self.moves.insert(0,"sl")
 
     def safe_check(self, current_node):
-        if current_node.adj
+        if current_node.adj[1]!="W" and current_node.adj[0] not in self.states.visited_node and current_node.adj[1] not in self.states.unvisited_safe_states:
 
 def finding_path(initial_state):
     from Game import GameState
