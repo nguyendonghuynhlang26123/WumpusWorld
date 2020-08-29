@@ -1,9 +1,8 @@
-import itertools
-import re
 from Agent import Agent, Directions, Actions
 from Game import GameState
 from util import PriorityQueue
-#from utils import *
+import time
+# from utils import *
 
 # a game node
 
@@ -133,14 +132,14 @@ class AIPlayer(Agent):
         self.visited_node = []
         self.visited_node.append((0, 0))
         self.unvisited_safe_node = []
-        #self.player = Player("1,1", 1)
+        # self.player = Player("1,1", 1)
 
         self.KB = KB()
         self.KB.tell(["~P" + name(pos)])
         self.KB.tell(["~W" + name(pos)])
 
         self.actions = []
-        #self.killing_wumpus = False
+        # self.killing_wumpus = False
 
     def clear_base(self):
         remove_list = []
@@ -149,7 +148,6 @@ class AIPlayer(Agent):
                 remove_list.append(item)
         for item in remove_list:
             self.KB.KB.remove(item)
-
 
     def handle_stench(self, cur_pos, adjs):
         sentence = []
@@ -179,12 +177,6 @@ class AIPlayer(Agent):
                 self.KB.tell(["~W"+name(adj)])
 
 
-def finding_path(initial_state):
-    KB = []
-    print(GameState.get_possible_actions(initial_state))
-    return ['North', 'North', Actions.PICK_GOLD, 'North', 'North', 'East', 'North', 'West']
-
-
 class AIAgentII(AIPlayer):
     def __init__(self, pos):
         super(AIAgentII, self).__init__(pos)
@@ -195,9 +187,10 @@ class AIAgentII(AIPlayer):
         self.KB.tell(["~W" + name(pos)])
         self.visited.append(pos)
         self.actions = []
+        self.checked_places = []
 
     def is_safe(self, pos):
-        #print("check", pos)
+        # print("check", pos)
         return self.KB.check(["P" + name(pos)]) and self.KB.check(["W" + name(pos)])
 
     def nearest_safe_place(self):
@@ -208,50 +201,39 @@ class AIAgentII(AIPlayer):
         return self.safe_places[dist.index(min(dist))]
 
     def wumpus_check(self, pos, adjs):
-        row = pos[0]
-        col = pos[1]
-        print("Test:")
-        print(adjs)
-        print(self.KB.KB)
-        print((row, col))
+        row = int(pos[0])
+        col = int(pos[1])
         if ((row, col + 1), Directions.EAST) in adjs:
             if (self.KB.check(["W" + str(row - 1) + "," + str(col)]) and self.KB.check(
                     ["~S" + str(row - 1) + "," + str(col + 1)])) or (self.KB.check(
                     ["W" + str(row + 1) + "," + str(col)]) and self.KB.check(
                     ["~S" + str(row + 1) + "," + str(col + 1)])):
-                self.kill_wumpus(Directions.EAST)
+                return Directions.EAST
 
         if ((row + 1, col), Directions.NORTH) in adjs:
             if self.KB.check(["W" + str(row) + "," + str(col - 1)]) and self.KB.check(
                     ["~S" + str(row + 1) + "," + str(col - 1)]) or self.KB.check(
                     ["W" + str(row) + "," + str(col + 1)]) and self.KB.check(
                     ["~S" + str(row + 1) + "," + str(col + 1)]):
-                self.kill_wumpus(Directions.NORTH)
+                return Directions.NORTH
 
         if ((row, col - 1), Directions.WEST) in adjs:
             if self.KB.check(["W" + str(row - 1) + "," + str(col)]) and self.KB.check(
                     ["~S" + str(row - 1) + "," + str(col - 1)]) or self.KB.check(
                     ["W" + str(row + 1) + "," + str(col)]) and self.KB.check(
                     ["~S" + str(row + 1) + "," + str(col - 1)]):
-                self.kill_wumpus(Directions.WEST)
+                return Directions.WEST
 
         if ((row - 1, col), Directions.SOUTH) in adjs:
             if self.KB.check(["W" + str(row) + "," + str(col - 1)]) and self.KB.check(
                     ["~S" + str(row - 1) + "," + str(col - 1)]) or self.KB.check(
                     ["W" + str(row) + "," + str(col + 1)]) and self.KB.check(
                     ["~S" + str(row - 1) + "," + str(col + 1)]):
-                self.kill_wumpus(Directions.SOUTH)
+                return Directions.SOUTH
 
-        if len(self.actions) == 0:
-            self.actions = []
-            self.actions.insert(0, Actions.shoot(adjs[0][1]))
-            self.safe_places.append(adjs[0][0])
-            print("Safe: ")
-            print(self.safe_places)
+        return None
 
     def kill_wumpus(self, dir):
-        self.actions = []
-        print("Action shoot inserted")
         self.actions.insert(0, Actions.shoot(dir))
 
     def safe_check(self, pos, adjs):
@@ -267,27 +249,28 @@ class AIAgentII(AIPlayer):
         pos = state.agent.pos
         adjs = GameState.get_adjs(state, pos)
 
+        print(pos, '-----')
+        start = time.time()
         "Add KB"
         if 'S' in state.explored[pos]:
             self.handle_stench(pos, adjs)
-            self.wumpus_check(pos, adjs)
-            print("Shoot: "+str(self.actions))
-            if len(self.actions)>0:
-                return self.actions.pop(0)
+            "If there is enough condition to conclude the wumpus position"
+            if (pos not in self.checked_places and self.wumpus_check(pos, adjs) != None):
+                self.checked_places.append(pos)
+                return Actions.shoot(self.wumpus_check(pos, adjs))
         else:
             self.handle_not_stench(pos, adjs)
-
         if 'B' in state.explored[pos]:
             self.handle_breeze(pos, adjs)
         else:
             self.handle_not_breeze(pos, adjs)
+        print('Handling KB takes %d seconds' % (time.time() - start))
 
         "Update safe places"
-        print(pos, '-----')
         for adj, _ in adjs:
             if (self.is_safe(adj)) and adj not in self.visited and adj not in self.safe_places:
                 print("Check ", adj, "=> Safe")
-                self.safe_places.append(adj)
+                self.safe_places.insert(0, adj)
             else:
                 print("Check ", adj, "=> UnSafe")
 
@@ -296,12 +279,12 @@ class AIAgentII(AIPlayer):
         if (pos in self.safe_places):
             self.safe_places.remove(pos)
 
-        # print(self.KB.KB)
+        print('--------------')
         if ('G' in state.explored[pos]):
             return Actions.PICK_GOLD
 
         if (self.safe_places != []):
-            self.actions = ucs(state, self.nearest_safe_place())
+            self.actions = ucs(state, self.safe_places[0])
             return self.actions.pop(0)
 
         "If there is no safe place => Exit"
@@ -328,7 +311,7 @@ def getCostOfActions(state, pos, actions):
 def ucs(current_state, goal_pos, chooseVisited=False):
     startpos = current_state.agent.pos
     factor = -1 if chooseVisited else 1
-    #print(startpos, goal_pos)
+    # print(startpos, goal_pos)
 
     explored = []
     frontier = PriorityQueue()

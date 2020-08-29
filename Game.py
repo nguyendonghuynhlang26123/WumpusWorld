@@ -87,6 +87,7 @@ class GameState:
         wumpus_list, pits_list, gold_list, _ = process_maze(maze, n)
         self.max_wumpus = len(wumpus_list)
         self.max_gold = len(gold_list)
+        self.killed_wumpus = []
 
     def copy(self):
         return copy.deepcopy(self)
@@ -116,12 +117,15 @@ class GameState:
                     'G', '')
             new_state.agent.gold += 1
         elif agent_action in Actions.SHOOT:
+            print("SHOOT SHOOT")
             "Agent Shoots arrows"
+            new_state.agent.dir = agent_action[6:]
             dx, dy = Actions.SHOOT[agent_action]
             target = (dx + curState.agent.pos[0], dy + curState.agent.pos[1])
             if (0 <= target[0] < curState.n and 0 <= target[1] < curState.n):
                 new_state.score -= 100
-                if ('W' in curState.maze[target]):
+                if ('W' in curState.maze[target]):  # Killed wumpus
+                    new_state.killed_wumpus.append(target)
                     if curState.maze[target] == 'W':
                         new_state.explored[target] = '-'
                         new_state.maze[target] = '-'

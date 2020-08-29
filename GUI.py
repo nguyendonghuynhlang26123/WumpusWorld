@@ -34,6 +34,7 @@ class GameGUI:
         self.imgs['P'] = get_img('Image\\pit.png')
         self.imgs['G'] = get_img('Image\\gold.png')
         self.imgs['E'] = get_img('Image\\exit.png')
+        self.imgs['Killed'] = get_img('Image\\killed.png')
 
         self.clock = pg.time.Clock()
         self.screen = pg.display.set_mode(
@@ -50,13 +51,13 @@ class GameGUI:
                     return True
 
     def draw(self, curState, agent_action):
-        self.clock.tick(self.fps)
+        # self.clock.tick(self.fps)
         self.screen.fill((0, 0, 0))
 
         "Draw rooms"
         for i in range(self.rows):
             for j in range(self.cols):
-                self.draw_room((i, j), curState.explored)
+                self.draw_room((i, j), curState)
 
         "Draw scores"
         text = self.score_font.render(
@@ -71,12 +72,15 @@ class GameGUI:
         self.draw_agent(curState.agent)
         pg.display.update()
 
-    def draw_room(self, pos: tuple, explored_set):
+    def draw_room(self, pos: tuple, state):
+        explored_set = state.explored
         i, j = pos
         world_pos = (j*WIDTH, (self.cols - 1 - i)*WIDTH)
 
         try:
             self.screen.blit(self.imgs['-'], world_pos)
+            if (pos in state.killed_wumpus):
+                self.screen.blit(self.imgs['Killed'], world_pos)
             if (explored_set[pos] != '-'):
                 for c in explored_set[pos]:
                     self.screen.blit(self.imgs[c], world_pos)
@@ -87,6 +91,10 @@ class GameGUI:
         i, j = agent.pos
         self.screen.blit(self.imgs['A'][agent.dir],
                          (j*WIDTH, (self.cols - 1 - i)*WIDTH))
+
+    def dead_wumpus(self, pos):
+        i, j = pos
+        world_pos = (j*WIDTH, (self.cols - 1 - i)*WIDTH)
 
     def agent_shooting(self, agent):
         i, j = agent.pos
