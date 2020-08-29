@@ -41,14 +41,13 @@ class GameGUI:
             (self.graphic_width, self.graphic_height))
 
     def checkEvent(self, waitForButt):
-        while True:
-            for event in pg.event.get():
-                if event.type == pg.QUIT:
-                    return False
-                if waitForButt and event.type == pg.KEYDOWN:
-                    return True
-                elif not waitForButt:
-                    return True
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                return False
+            while (waitForButt):
+                if event.type == pg.KEYDOWN:
+                    return True           
+        return True
 
     def draw(self, curState, agent_action):
         # self.clock.tick(self.fps)

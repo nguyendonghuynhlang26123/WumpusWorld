@@ -250,7 +250,7 @@ class AIAgentII(AIPlayer):
         adjs = GameState.get_adjs(state, pos)
 
         print(pos, '-----')
-        start = time.time()
+
         "Add KB"
         if 'S' in state.explored[pos]:
             self.handle_stench(pos, adjs)
@@ -264,7 +264,6 @@ class AIAgentII(AIPlayer):
             self.handle_breeze(pos, adjs)
         else:
             self.handle_not_breeze(pos, adjs)
-        print('Handling KB takes %d seconds' % (time.time() - start))
 
         "Update safe places"
         for adj, _ in adjs:
@@ -280,8 +279,10 @@ class AIAgentII(AIPlayer):
             self.safe_places.remove(pos)
 
         print('--------------')
+        start = time.time()
         if ('G' in state.explored[pos]):
             return Actions.PICK_GOLD
+        print('Pick golds takes %d seconds' % (time.time() - start))
 
         if (self.safe_places != []):
             self.actions = ucs(state, self.safe_places[0])
