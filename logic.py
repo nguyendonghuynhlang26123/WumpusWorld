@@ -142,40 +142,6 @@ class AIPlayer(Agent):
         self.actions = []
         #self.killing_wumpus = False
 
-    def get_action(self, gamestate, stench, breeze, glitter, bump, scream):
-        "Gamestate.agent.pos: return (i,j) as coordinate of agent"
-        pos = gamestate.agent.pos
-        "Get_adjs return adjs of parameter pos. "
-        "Return: a tuple ((i,j), <direction of this coordinate comparing to pos>)"
-        "I.e: pos = (5,5) => adj on the north: ((4,5), 'North') "
-        adjs = GameState.get_adjs(gamestate, pos)
-
-        # if bump:  # walk into wall
-        #     self.handle_bump()
-
-        if scream:  # A wumpus is shot
-            pass
-            # more...
-        if not self.iLeaving:
-            if stench:
-                "Handle stench"
-                self.handle_stench(pos, adjs)
-                "Handle wumpus"
-                self.wumpus_check(pos, adjs)
-            else:
-                self.handle_not_stench(pos, adjs)
-            if breeze:
-                self.handle_breeze(pos, adjs)
-            else:
-                self.handle_not_breeze(pos, adjs)
-            "Safe check:"
-            self.safe_check(pos, adjs)
-
-            if glitter:  # gold collect
-                self.actions.insert(0, Actions.PICK_GOLD)
-
-        return self.actions.pop(0)
-
     def clear_base(self):
         remove_list = []
         for item in self.KB.KB:
@@ -184,50 +150,7 @@ class AIPlayer(Agent):
         for item in remove_list:
             self.KB.KB.remove(item)
 
-    def wumpus_check(self, pos, adjs):
-        row = pos[0]
-        col = pos[1]
 
-        if ((row, col + 1), Directions.EAST) in adjs:
-            if self.KB.check(["W" + str(row - 1) + "," + str(col)]) and self.KB.check(
-                    ["~S" + str(row - 1) + "," + str(col + 1)]) or self.KB.check(
-                    ["W" + str(row + 1) + "," + str(col)]) and self.KB.check(
-                    ["~S" + str(row + 1) + "," + str(col + 1)]):
-                self.kill_wumpus(Directions.EAST)
-
-        if ((row + 1, col), Directions.NORTH) in adjs:
-            if self.KB.check(["W" + str(row) + "," + str(col - 1)]) and self.KB.check(
-                    ["~S" + str(row + 1) + "," + str(col - 1)]) or self.KB.check(
-                    ["W" + str(row) + "," + str(col + 1)]) and self.KB.check(
-                    ["~S" + str(row + 1) + "," + str(col + 1)]):
-                self.kill_wumpus(Directions.NORTH)
-
-        if ((row, col - 1), Directions.WEST) in adjs:
-            if self.KB.check(["W" + str(row - 1) + "," + str(col)]) and self.KB.check(
-                    ["~S" + str(row - 1) + "," + str(col - 1)]) or self.KB.check(
-                    ["W" + str(row + 1) + "," + str(col)]) and self.KB.check(
-                    ["~S" + str(row + 1) + "," + str(col - 1)]):
-                self.kill_wumpus(Directions.WEST)
-
-        if ((row - 1, col), Directions.SOUTH) in adjs:
-            if self.KB.check(["W" + str(row) + "," + str(col - 1)]) and self.KB.check(
-                    ["~S" + str(row - 1) + "," + str(col - 1)]) or self.KB.check(
-                    ["W" + str(row) + "," + str(col + 1)]) and self.KB.check(
-                    ["~S" + str(row - 1) + "," + str(col + 1)]):
-                self.kill_wumpus(Directions.SOUTH)
-
-    def kill_wumpus(self, dir):
-        self.actions = []
-        self.actions.insert(0, Actions.shoot(dir))
-
-    def safe_check(self, pos, adjs):
-        for adj, _ in adjs:
-            if adj not in self.visited_node and adj not in self.unvisited_safe_node:
-                if self.KB.check(["P" + name(adj)]) and self.KB.check(["W" + name(adj)]):
-                    self.unvisited_safe_node.append(name(adj))
-
-    def handle_bump(self):
-        pass
 
     def handle_stench(self, cur_pos, adjs):
         sentence = []
@@ -284,6 +207,59 @@ class AIAgentII(AIPlayer):
                         abs(self.pos[1] - room[1]))
         return self.safe_places[dist.index(min(dist))]
 
+    def wumpus_check(self, pos, adjs):
+        row = pos[0]
+        col = pos[1]
+        print("Test:")
+        print(adjs)
+        print(self.KB.KB)
+        print((row, col))
+        if ((row, col + 1), Directions.EAST) in adjs:
+            if (self.KB.check(["W" + str(row - 1) + "," + str(col)]) and self.KB.check(
+                    ["~S" + str(row - 1) + "," + str(col + 1)])) or (self.KB.check(
+                    ["W" + str(row + 1) + "," + str(col)]) and self.KB.check(
+                    ["~S" + str(row + 1) + "," + str(col + 1)])):
+                self.kill_wumpus(Directions.EAST)
+
+        if ((row + 1, col), Directions.NORTH) in adjs:
+            if self.KB.check(["W" + str(row) + "," + str(col - 1)]) and self.KB.check(
+                    ["~S" + str(row + 1) + "," + str(col - 1)]) or self.KB.check(
+                    ["W" + str(row) + "," + str(col + 1)]) and self.KB.check(
+                    ["~S" + str(row + 1) + "," + str(col + 1)]):
+                self.kill_wumpus(Directions.NORTH)
+
+        if ((row, col - 1), Directions.WEST) in adjs:
+            if self.KB.check(["W" + str(row - 1) + "," + str(col)]) and self.KB.check(
+                    ["~S" + str(row - 1) + "," + str(col - 1)]) or self.KB.check(
+                    ["W" + str(row + 1) + "," + str(col)]) and self.KB.check(
+                    ["~S" + str(row + 1) + "," + str(col - 1)]):
+                self.kill_wumpus(Directions.WEST)
+
+        if ((row - 1, col), Directions.SOUTH) in adjs:
+            if self.KB.check(["W" + str(row) + "," + str(col - 1)]) and self.KB.check(
+                    ["~S" + str(row - 1) + "," + str(col - 1)]) or self.KB.check(
+                    ["W" + str(row) + "," + str(col + 1)]) and self.KB.check(
+                    ["~S" + str(row - 1) + "," + str(col + 1)]):
+                self.kill_wumpus(Directions.SOUTH)
+
+        if len(self.actions) == 0:
+            self.actions = []
+            self.actions.insert(0, Actions.shoot(adjs[0][1]))
+            self.safe_places.append(adjs[0][0])
+            print("Safe: ")
+            print(self.safe_places)
+
+    def kill_wumpus(self, dir):
+        self.actions = []
+        print("Action shoot inserted")
+        self.actions.insert(0, Actions.shoot(dir))
+
+    def safe_check(self, pos, adjs):
+        for adj, _ in adjs:
+            if adj not in self.visited_node and adj not in self.unvisited_safe_node:
+                if self.KB.check(["P" + name(adj)]) and self.KB.check(["W" + name(adj)]):
+                    self.unvisited_safe_node.append(name(adj))
+
     def get_action(self, state):
         pos = state.agent.pos
         adjs = GameState.get_adjs(state, pos)
@@ -292,6 +268,9 @@ class AIAgentII(AIPlayer):
         if 'S' in state.explored[pos]:
             self.handle_stench(pos, adjs)
             self.wumpus_check(pos, adjs)
+            print("Shoot: "+str(self.actions))
+            if len(self.actions)>0:
+                return self.actions.pop(0)
         else:
             self.handle_not_stench(pos, adjs)
 
