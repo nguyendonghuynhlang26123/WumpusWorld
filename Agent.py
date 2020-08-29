@@ -112,7 +112,7 @@ class Agent:
 
     def move(self, direction):
         self.dir = direction
-        self.actions.append(direction)
+        #self.actions.append(direction)
         self.pos = Actions.getSuccessor(self.pos, direction)
 
     def __repr__(self):

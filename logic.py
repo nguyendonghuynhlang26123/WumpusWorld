@@ -142,40 +142,6 @@ class AIPlayer(Agent):
         self.actions = []
         #self.killing_wumpus = False
 
-    def get_action(self, gamestate, stench, breeze, glitter, bump, scream):
-        "Gamestate.agent.pos: return (i,j) as coordinate of agent"
-        pos = gamestate.agent.pos
-        "Get_adjs return adjs of parameter pos. "
-        "Return: a tuple ((i,j), <direction of this coordinate comparing to pos>)"
-        "I.e: pos = (5,5) => adj on the north: ((4,5), 'North') "
-        adjs = GameState.get_adjs(gamestate, pos)
-
-        # if bump:  # walk into wall
-        #     self.handle_bump()
-
-        if scream:  # A wumpus is shot
-            pass
-            # more...
-        if not self.iLeaving:
-            if stench:
-                "Handle stench"
-                self.handle_stench(pos, adjs)
-                "Handle wumpus"
-                self.wumpus_check(pos, adjs)
-            else:
-                self.handle_not_stench(pos, adjs)
-            if breeze:
-                self.handle_breeze(pos, adjs)
-            else:
-                self.handle_not_breeze(pos, adjs)
-            "Safe check:"
-            self.safe_check(pos, adjs)
-
-            if glitter:  # gold collect
-                self.actions.insert(0, Actions.PICK_GOLD)
-
-        return self.actions.pop(0)
-
     def clear_base(self):
         remove_list = []
         for item in self.KB.KB:
@@ -185,8 +151,8 @@ class AIPlayer(Agent):
             self.KB.KB.remove(item)
 
     def wumpus_check(self, pos, adjs):
-        row = pos[0]
-        col = pos[1]
+        row = int(pos[0])
+        col = int(pos[1])
 
         if ((row, col + 1), Directions.EAST) in adjs:
             if self.KB.check(["W" + str(row - 1) + "," + str(col)]) and self.KB.check(
@@ -272,6 +238,7 @@ class AIAgentII(AIPlayer):
         self.KB.tell(["~P" + name(pos)])
         self.KB.tell(["~W" + name(pos)])
         self.visited.append(pos)
+        self.actions = []
 
     def is_safe(self, pos):
         #print("check", pos)
@@ -285,6 +252,9 @@ class AIAgentII(AIPlayer):
         return self.safe_places[dist.index(min(dist))]
 
     def get_action(self, state):
+        if (self.actions != []):
+            return self.actions.pop(0)
+
         pos = state.agent.pos
         adjs = GameState.get_adjs(state, pos)
 
@@ -301,7 +271,7 @@ class AIAgentII(AIPlayer):
             self.handle_not_breeze(pos, adjs)
 
         "Update safe places"
-        print(pos, '-----', state.exit)
+        print(pos, '-----')
         for adj, _ in adjs:
             if (self.is_safe(adj)) and adj not in self.visited and adj not in self.safe_places:
                 print("Check ", adj, "=> Safe")
@@ -317,16 +287,19 @@ class AIAgentII(AIPlayer):
         # print(self.KB.KB)
         if ('G' in state.explored[pos]):
             return Actions.PICK_GOLD
+
         if (self.safe_places != []):
-            return ucs(state, self.nearest_safe_place())[0]
+            self.actions = ucs(state, self.nearest_safe_place())
+            return self.actions.pop(0)
 
         "If there is no safe place => Exit"
-        if pos == state.exit:
+        if pos == state.exit and self.iLeaving:
             return Actions.EXIT
         else:
             self.iLeaving = True
             print("EXIT", state.exit)
-            return ucs(state, state.exit)[0]
+            self.actions = ucs(state, state.exit)
+            return self.actions.pop(0)
 
 
 def getCostOfActions(state, pos, actions):

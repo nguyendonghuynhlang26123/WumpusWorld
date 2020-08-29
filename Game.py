@@ -1,4 +1,5 @@
 from Agent import Agent, Actions, Directions
+from MapGenerator import map_generator
 import os
 import copy
 import logic
@@ -36,11 +37,11 @@ def process_maze(maze, n):
     exitPos = ()
     for i in range(n):
         for j in range(n):
-            if (maze[(i, j)] == 'W'):
+            if ('W' in maze[(i, j)]):
                 wumpus.append(maze[(i, j)])
-            elif (maze[(i, j)] == 'P'):
+            elif ('P' in maze[(i, j)]):
                 pits.append(maze[(i, j)])
-            elif (maze[(i, j)] == 'G'):
+            elif ('G' in maze[(i, j)]):
                 golds.append(maze[(i, j)])
             elif (maze[(i, j)] == 'A'):
                 exitPos = maze[(i, j)]
@@ -96,7 +97,7 @@ class GameState:
                 return pos
 
     def isOver(self):
-        if (self.maze[self.agent.pos] == 'W' or self.maze[self.agent.pos] == 'P'):
+        if ('W' in self.maze[self.agent.pos] or 'P' in self.maze[self.agent.pos]):
             return "Lose"
         elif (self.climbout or
               (self.agent.wumpus_killed == self.max_wumpus and self.agent.gold == self.max_gold)):
@@ -108,17 +109,27 @@ class GameState:
         "Agent performing grab a gold"
         if (agent_action == Actions.PICK_GOLD):
             new_state.score += 100
-            new_state.explored[new_state.agent.pos] = '-'
+            if (new_state.explored[new_state.agent.pos] == 'G'):
+                new_state.explored[new_state.agent.pos] = '-'
+            else:
+                new_state.explored[new_state.agent.pos] = new_state.explored[new_state.agent.pos].replace(
+                    'G', '')
             new_state.agent.gold += 1
         elif agent_action in Actions.SHOOT:
             "Agent Shoots arrows"
             dx, dy = Actions.SHOOT[agent_action]
-            target = (dx + curState.agent.x, dy + curState.agent.y)
+            target = (dx + curState.agent.pos[0], dy + curState.agent.pos[1])
             if (0 <= target[0] < curState.n and 0 <= target[1] < curState.n):
                 new_state.score -= 100
-                if (curState.maze[target] == 'W'):
-                    new_state.explored[target] = '-'
-                    new_state.maze[target] = '-'
+                if ('W' in curState.maze[target]):
+                    if curState.maze[target] == 'W':
+                        new_state.explored[target] = '-'
+                        new_state.maze[target] = '-'
+                    else:
+                        others = curState.maze[target].replace('W', '')
+                        new_state.explored[target] = others
+                        new_state.maze[target] = others
+
                     new_state.agent.wumpus_killed += 1
         elif agent_action == Actions.EXIT:
             "Agent exits the cave"
@@ -136,6 +147,9 @@ class GameState:
 
             new_state.agent.move(agent_action)
             new_state.score -= 10
+
+            if new_state.isOver() == 'Lose':
+                new_state.score -= 1000
         return new_state
 
     get_successor = staticmethod(get_successor)
@@ -162,7 +176,8 @@ class GameState:
 
 
 def run():
-    n, maze = try_to_load('input.txt')
+    #n, maze = try_to_load('input.txt')
+    n, maze = map_generator(10, 5, 5)
 
     curState = GameState.initial_state(maze, n, "AIAgentII")
     ui = GameGUI(n, n)
@@ -173,10 +188,10 @@ def run():
         'Wumpus Killed': 0
     })
 
-    #actions = logic.finding_path(curState)
     isRunning = True
+    waitforButt = False
     while isRunning:
-        isRunning = ui.checkEvent()
+        isRunning = ui.checkEvent(waitforButt)
 
         if (curState.isOver() != None):
             isRunning = False
@@ -187,9 +202,9 @@ def run():
         else:
             next_act = curState.agent.get_action(curState)
             curState = GameState.get_successor(curState, next_act)
-            ui.draw(curState.explored, curState.agent, curState.score)
+            ui.draw(curState, next_act)
     print('-------------------------')
-    print("\n".join([str(e) + " : " + str(result[e]) for e in result]))
+    print("\n".join([str(e) + ": " + str(result[e]) for e in result]))
     print('-------------------------')
 
 
