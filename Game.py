@@ -182,7 +182,7 @@ class GameState:
 def run():
     #n, maze = try_to_load('input.txt')
     n, maze = map_generator(10, 5, 5)
-
+    f = open("output.txt", "w")
     curState = GameState.initial_state(maze, n, "AIAgentII")
     ui = GameGUI(n, n)
     result = dict({
@@ -204,13 +204,19 @@ def run():
             result['Wumpus Killed'] = curState.agent.wumpus_killed
             result['Gold Picked'] = curState.agent.gold
         else:
-            next_act = curState.agent.get_action(curState)
-            print("Take action: ",next_act)
+            f.write("NPos: "+str(curState.agent.pos)+"\n")
+            f.write("NPercept: "+str(curState.explored[curState.agent.pos])+"\n")
+            next_act, ck_descriptor = curState.agent.get_action(curState)
+            f.write(ck_descriptor+"\n")
+            f.write("NKB: "+str(curState.agent.KB.KB)+"\n")
+            f.write("Take action: "+str(next_act)+"\n")
+            f.write("------------------\n")
+
             curState = GameState.get_successor(curState, next_act)
             ui.draw(curState, next_act)
-    print('-------------------------')
-    print("\n".join([str(e) + ": " + str(result[e]) for e in result]))
-    print('-------------------------')
+    f.write('-------------------------\n')
+    f.writelines("\n".join([str(e) + ": " + str(result[e]) for e in result]))
+    f.write('\n-------------------------\n')
 
 
 if __name__ == "__main__":

@@ -243,60 +243,63 @@ class AIAgentII(AIPlayer):
                     self.unvisited_safe_node.append(name(adj))
 
     def get_action(self, state):
+        ck_descriptor=""
         if (self.actions != []):
-            return self.actions.pop(0)
+            return self.actions.pop(0), ck_descriptor
 
         pos = state.agent.pos
-        print("Pos: ",pos)
+        #print("Pos: ",pos)
         adjs = GameState.get_adjs(state, pos)
 
         #(pos, '-----')
-        print("Percept: ",state.explored[pos])
+        #print("Percept: ",state.explored[pos])
         "Add KB"
         if 'S' in state.explored[pos]:
             self.handle_stench(pos, adjs)
             "If there is enough condition to conclude the wumpus position"
             if (pos not in self.checked_places and self.wumpus_check(pos, adjs) != None):
                 self.checked_places.append(pos)
-                return Actions.shoot(self.wumpus_check(pos, adjs))
+                return Actions.shoot(self.wumpus_check(pos, adjs)), ck_descriptor
         else:
             self.handle_not_stench(pos, adjs)
         if 'B' in state.explored[pos]:
             self.handle_breeze(pos, adjs)
         else:
             self.handle_not_breeze(pos, adjs)
-        print("KB: ", self.KB.KB)
+        #print("KB: ", self.KB.KB)
         "Update safe places"
         for adj, _ in adjs:
             if (self.is_safe(adj)) and adj not in self.visited and adj not in self.safe_places:
-                print("Check ", adj, "=> Safe")
+                #print("Check ", adj, "=> Safe")
+                ck_descriptor += "Check "+name(adj)+"=> Safe\n"
                 self.safe_places.insert(0, adj)
             else:
-                print("Check ", adj, "=> UnSafe")
+                ck_descriptor += "Check " + name(adj) + "=> UnSafe\n"
+                #print("Check ", adj, "=> UnSafe")
 
         "Update visited lists"
         self.visited.append(pos)
         if (pos in self.safe_places):
             self.safe_places.remove(pos)
 
-        print('--------------')
+        #print('--------------')
         start = time.time()
         if ('G' in state.explored[pos]):
-            return Actions.PICK_GOLD
+            return Actions.PICK_GOLD, ck_descriptor
         #print('Pick golds takes %d seconds' % (time.time() - start))
 
         if (self.safe_places != []):
             self.actions = ucs(state, self.safe_places[0])
-            return self.actions.pop(0)
+            return self.actions.pop(0), ck_descriptor
 
         "If there is no safe place => Exit"
         if pos == state.exit and self.iLeaving:
-            return Actions.EXIT
+            return Actions.EXIT, ck_descriptor
         else:
             self.iLeaving = True
             print("EXIT from: ",state.agent.pos, " to: ", state.exit)
             self.actions = ucs(state, state.exit)
-            return self.actions.pop(0)
+            return self.actions.pop(0), ck_descriptor
 
 
 def getCostOfActions(state, pos, actions):
