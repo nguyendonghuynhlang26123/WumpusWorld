@@ -1,93 +1,19 @@
 from Agent import Agent, Directions, Actions
 from Game import GameState
 from util import PriorityQueue
-import time
-# from utils import *
-
-# a game node
-
-
-# class Node:
-#     def __init__(self, row, col):
-#         self.row = row
-#         self.col = col
-#         self.name = str(row)+","+str(col)
-#         self.adj = ["", "", "", ""]  # up, right, down, left (clockwise)
-
-#     def __repr__(self):
-#         return ("(Name : " + str(self.name) + " , " +
-#                 " left : " + self.adj[3] + " , " + " Right : " + self.adj[1] + " , " +
-#                 " Up : " + self.adj[0] + " , " + " Down : " + self.adj[2] + " , " + ")")
-
-# character state
-
-
-# class Player:
-#     def __init__(self, node, dir):
-#         self.current_node = node
-#         self.current_direction = dir
-#         self.gold = 0
-#         self.wumpus_killed = 0
-#         self.iLeaving = False
-
-#     def move(self, nodes):
-#         if nodes[self.current_node.adj[self.current_direction]] != "W":  # Direction node is not wall
-#             self.current_node = nodes[self.current_node.adj[self.current_direction]]
-
-#     def turn(self, dir):
-#         self.current_direction = (self.current_direction+dir) % 4
-
-#     def __repr__(self):
-#         return ("Current Node : " + str(self.current_node.name) + " , " +
-#                 "Current Direction : " + str(self.current_direction))
-
-
-# class Game_State:
-#     def __init__(self):
-#         self.nodes = dict()
-#         self.visited_node = []
-#         self.unvisited_safe_node = []
-#         self.max_row = -1
-#         self.max_col = -1
-
-#     def add_node(self, node):
-#         # update adjacent nodes
-#         if self.max_col != -1 and node.col == self.max_col:
-#             node.adj[1] = "W"  # Meet wall on the right
-#         else:
-#             node.adj[1] = str(node.row)+","+str(node.col+1)
-#         if node.col == 1:
-#             node.adj[3] = "W"  # Meet left wall
-#         else:
-#             node.adj[3] = str(node.row)+","+str(node.col-1)
-#         if self.max_row != -1 and node.row == self.max_row:
-#             node.adj[0] = "W"  # Meet upper wall
-#         else:
-#             node.adj[0] = str(node.row+1)+","+str(node.col)
-#         if node.row == 1:
-#             node.adj[2] = "W"  # Meet bottom wall
-#         else:
-#             node.adj[2] = str(node.row-1)+","+str(node.col)
-#         self.nodes[node.name] = node
-#         if node.name not in self.visited_node:
-#             self.visited_node.append(node.name)
-
-#     def __repr__(self):
-#         return ("Nodes : " + str(self.nodes.keys()) + " , " +
-#                 " Visited Nodes : " + str(self.visited_node))
 
 
 class KB:
     def __init__(self, sentence=None):
         self.KB = []
-    # add sentence to KB
 
+    # add sentence to KB
     def tell(self, sentence):
         if sentence not in self.KB:
             self.KB.append(sentence)
             self.KB = sorted(self.KB, key=lambda x: len(x))
-    # check for resolution compatibility
 
+    # check for resolution compatibility
     def compare(self, query1, query2):
         if len(query1) == 1:
             for item in query2:
@@ -95,8 +21,8 @@ class KB:
                     query2.remove(item)
                 elif item[0] == "~" and query1[0][0:] == item[1:]:
                     query2.remove(item)
-    # check for substitution that make a query true
 
+    # check for substitution that make a query true
     def check(self, query):
         KB_temp = self.KB.copy()
         KB_temp.append(query)
@@ -124,22 +50,18 @@ def name(pos: tuple):
     return str(int(pos[0])) + ',' + str(int(pos[1]))
 
 
-class AIPlayer(Agent):
+class AIAgent(Agent):
     def __init__(self, pos):
-        super().__init__(pos)
-        # self.states = Game_State()
-        # self.states.add_node((0, 0))
-        self.visited_node = []
-        self.visited_node.append((0, 0))
-        self.unvisited_safe_node = []
-        # self.player = Player("1,1", 1)
-
+        super(AIAgent, self).__init__(pos)
+        self.visited = []
+        self.safe_places = []
         self.KB = KB()
         self.KB.tell(["~P" + name(pos)])
         self.KB.tell(["~W" + name(pos)])
-
+        self.visited.append(pos)
         self.actions = []
-        # self.killing_wumpus = False
+        self.checked_places = []
+        self.description = ''
 
     def clear_base(self):
         remove_list = []
@@ -152,7 +74,7 @@ class AIPlayer(Agent):
     def handle_stench(self, cur_pos, adjs):
         sentence = []
         for adj, _ in adjs:
-            if adj not in self.visited_node:
+            if adj not in self.visited:
                 sentence.append("W"+name(adj))
 
         self.KB.tell(sentence)
@@ -161,44 +83,23 @@ class AIPlayer(Agent):
     def handle_breeze(self, pos, adjs):
         sentence = []
         for adj, _ in adjs:
-            if adj not in self.visited_node:
+            if adj not in self.visited:
                 sentence.append("P"+name(adj))
         self.KB.tell(sentence)
         self.KB.tell(["B"+name(pos)])
 
     def handle_not_breeze(self, pos, adjs):
         for adj, _ in adjs:
-            if adj not in self.visited_node:
+            if adj not in self.visited:
                 self.KB.tell(["~P"+name(adj)])
 
     def handle_not_stench(self, pos, adjs):
         for adj, _ in adjs:
-            if adj not in self.visited_node:
+            if adj not in self.visited:
                 self.KB.tell(["~W"+name(adj)])
 
-
-class AIAgentII(AIPlayer):
-    def __init__(self, pos):
-        super(AIAgentII, self).__init__(pos)
-        self.visited = []
-        self.safe_places = []
-        self.KB = KB()
-        self.KB.tell(["~P" + name(pos)])
-        self.KB.tell(["~W" + name(pos)])
-        self.visited.append(pos)
-        self.actions = []
-        self.checked_places = []
-
     def is_safe(self, pos):
-        # print("check", pos)
         return self.KB.check(["P" + name(pos)]) and self.KB.check(["W" + name(pos)])
-
-    def nearest_safe_place(self):
-        dist = []
-        for room in self.safe_places:
-            dist.append(abs(self.pos[0] - room[0]) +
-                        abs(self.pos[1] - room[1]))
-        return self.safe_places[dist.index(min(dist))]
 
     def wumpus_check(self, pos, adjs):
         row = int(pos[0])
@@ -208,93 +109,109 @@ class AIAgentII(AIPlayer):
                     ["~S" + str(row - 1) + "," + str(col + 1)])) or (self.KB.check(
                     ["W" + str(row + 1) + "," + str(col)]) and self.KB.check(
                     ["~S" + str(row + 1) + "," + str(col + 1)])):
-                return Directions.EAST
+                return Directions.EAST, (row, col + 1)
 
         if ((row + 1, col), Directions.NORTH) in adjs:
             if self.KB.check(["W" + str(row) + "," + str(col - 1)]) and self.KB.check(
                     ["~S" + str(row + 1) + "," + str(col - 1)]) or self.KB.check(
                     ["W" + str(row) + "," + str(col + 1)]) and self.KB.check(
                     ["~S" + str(row + 1) + "," + str(col + 1)]):
-                return Directions.NORTH
+                return Directions.NORTH, (row + 1, col)
 
         if ((row, col - 1), Directions.WEST) in adjs:
             if self.KB.check(["W" + str(row - 1) + "," + str(col)]) and self.KB.check(
                     ["~S" + str(row - 1) + "," + str(col - 1)]) or self.KB.check(
                     ["W" + str(row + 1) + "," + str(col)]) and self.KB.check(
                     ["~S" + str(row + 1) + "," + str(col - 1)]):
-                return Directions.WEST
+                return Directions.WEST, (row, col - 1)
 
         if ((row - 1, col), Directions.SOUTH) in adjs:
             if self.KB.check(["W" + str(row) + "," + str(col - 1)]) and self.KB.check(
                     ["~S" + str(row - 1) + "," + str(col - 1)]) or self.KB.check(
                     ["W" + str(row) + "," + str(col + 1)]) and self.KB.check(
                     ["~S" + str(row - 1) + "," + str(col + 1)]):
-                return Directions.SOUTH
+                return Directions.SOUTH, (row - 1, col)
 
-        return None
+        return None, None
 
-    def kill_wumpus(self, dir):
-        self.actions.insert(0, Actions.shoot(dir))
+    def recheck_stenches(self, state):
+        possible_safe = []
+        for pos in self.stenches:
+            if 'S' in state.explored[pos]:
+                adjs = GameState.get_adjs(state, pos)
+                _, target_pos = self.wumpus_check(pos, adjs)
+                if (target_pos != None and target_pos not in self.checked_places):
+                    possible_safe.append(pos)
 
-    def safe_check(self, pos, adjs):
-        for adj, _ in adjs:
-            if adj not in self.visited_node and adj not in self.unvisited_safe_node:
-                if self.KB.check(["P" + name(adj)]) and self.KB.check(["W" + name(adj)]):
-                    self.unvisited_safe_node.append(name(adj))
+        return possible_safe
 
     def get_action(self, state):
+        pos = state.agent.pos
+        adjs = GameState.get_adjs(state, pos)
+        self.description = '\n--------------------\nPos: ' + name(pos) + '\n'
+        self.description += "KB:\t" + str(self.KB.KB) + '\n'
+
+        "Moving following by the temporary goals"
         if (self.actions != []):
+            self.description += 'Goal: Move to the next safe place: '
+            if (self.iLeaving):
+                self.description += name(state.exit) + ' (Exit)'
+            else:
+                self.description += name(self.safe_places[0])
             return self.actions.pop(0)
 
-        pos = state.agent.pos
-        print("Pos: ",pos)
-        adjs = GameState.get_adjs(state, pos)
+        "Gold picking - Prioritize picking gold"
+        if ('G' in state.explored[pos]):
+            self.description += 'Goal: Pick gold'
+            return Actions.PICK_GOLD
 
-        #(pos, '-----')
-        print("Percept: ",state.explored[pos])
         "Add KB"
         if 'S' in state.explored[pos]:
             self.handle_stench(pos, adjs)
             "If there is enough condition to conclude the wumpus position"
-            if (pos not in self.checked_places and self.wumpus_check(pos, adjs) != None):
-                self.checked_places.append(pos)
-                return Actions.shoot(self.wumpus_check(pos, adjs))
+            target_dir, target_pos = self.wumpus_check(pos, adjs)
+            if (target_dir != None and target_pos not in self.checked_places):
+                self.checked_places.append(target_pos)
+                # self.safe_places.append(target_pos)
+                self.description += 'Goal: Attempting to shoot at ' + \
+                    name(target_pos)
+                return Actions.shoot(target_dir)
         else:
             self.handle_not_stench(pos, adjs)
         if 'B' in state.explored[pos]:
             self.handle_breeze(pos, adjs)
         else:
             self.handle_not_breeze(pos, adjs)
-        print("KB: ", self.KB.KB)
+
         "Update safe places"
+        temp = []
         for adj, _ in adjs:
             if (self.is_safe(adj)) and adj not in self.visited and adj not in self.safe_places:
-                print("Check ", adj, "=> Safe")
+                temp.append(adj)
                 self.safe_places.insert(0, adj)
-            else:
-                print("Check ", adj, "=> UnSafe")
+        if (temp != []):
+            self.description += 'Percept: ' + \
+                str(temp) + ' is safe and not yet visited\n'
 
         "Update visited lists"
         self.visited.append(pos)
         if (pos in self.safe_places):
             self.safe_places.remove(pos)
 
-        print('--------------')
-        start = time.time()
-        if ('G' in state.explored[pos]):
-            return Actions.PICK_GOLD
-        #print('Pick golds takes %d seconds' % (time.time() - start))
-
+        "Find the next place to move"
         if (self.safe_places != []):
             self.actions = ucs(state, self.safe_places[0])
+            self.description += 'Goal: Move to the next unvisited safe place: ' + \
+                name(self.safe_places[0])
             return self.actions.pop(0)
 
         "If there is no safe place => Exit"
         if pos == state.exit and self.iLeaving:
+            self.description += 'Goal: Climb out of the cave'
             return Actions.EXIT
         else:
             self.iLeaving = True
-            print("EXIT from: ",state.agent.pos, " to: ", state.exit)
+            self.description += 'Goal: Find the exit to leave'
             self.actions = ucs(state, state.exit)
             return self.actions.pop(0)
 

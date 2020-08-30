@@ -1,9 +1,11 @@
 from Agent import Agent, Actions, Directions
 from MapGenerator import map_generator
+from util import readCommand
+from GUI import GameGUI
 import os
 import copy
 import logic
-from GUI import GameGUI
+import sys
 
 
 def try_to_load(fname):
@@ -50,7 +52,7 @@ def process_maze(maze, n):
 
 
 class GameState:
-    def initial_state(maze, n, agent_type="Agent"):
+    def initial_state(maze, n):
         explored_set = dict({})
         for i in range(n):
             for j in range(n):
@@ -61,15 +63,12 @@ class GameState:
             if maze[pos] == 'A':
                 exitPos = pos
                 explored_set[pos] = '-'  # Mark start place is visited
-                if agent_type == "Agent":
-                    agent = Agent(pos)
-                else:
-                    print("voov")
-                    try:
-                        from logic import AIAgentII
-                        agent = AIAgentII(pos)
-                    except:
-                        raise Exception('Error')
+                try:
+                    from logic import AIAgent
+                    agent = AIAgent(pos)
+                except:
+                    raise Exception(
+                        'Error! Cannot import AIAgent from logic.py')
 
         return GameState(explored_set, maze, n, agent, exitPos)
     initial_state = staticmethod(initial_state)
@@ -84,7 +83,7 @@ class GameState:
         self.score = score
         self.climbout = False
 
-        wumpus_list, pits_list, gold_list, _ = process_maze(maze, n)
+        wumpus_list, _, gold_list, _ = process_maze(maze, n)
         self.max_wumpus = len(wumpus_list)
         self.max_gold = len(gold_list)
         self.killed_wumpus = []
@@ -98,11 +97,14 @@ class GameState:
                 return pos
 
     def isOver(self):
-        if ('W' in self.maze[self.agent.pos] or 'P' in self.maze[self.agent.pos]):
-            return "Lose"
-        elif (self.climbout or
-              (self.agent.wumpus_killed == self.max_wumpus and self.agent.gold == self.max_gold)):
-            return "Win"
+        if ('W' in self.maze[self.agent.pos]):
+            return "Lose - Killed by Wumpus"
+        if 'P' in self.maze[self.agent.pos]:
+            return "Lose - Falled into a pit"
+        if (self.climbout):
+            return "Win - Agent climbed out of the cave"
+        if self.agent.wumpus_killed == self.max_wumpus and self.agent.gold == self.max_gold:
+            return "Win - Kill all of wumpuses and golds"
         return None
 
     def get_successor(curState, agent_action):
@@ -117,7 +119,6 @@ class GameState:
                     'G', '')
             new_state.agent.gold += 1
         elif agent_action in Actions.SHOOT:
-            print("SHOOT SHOOT")
             "Agent Shoots arrows"
             new_state.agent.dir = agent_action[6:]
             dx, dy = Actions.SHOOT[agent_action]
@@ -179,39 +180,95 @@ class GameState:
     get_adjs = staticmethod(get_adjs)
 
 
-def run():
-    #n, maze = try_to_load('input.txt')
-    n, maze = map_generator(10, 5, 5)
+def write_maze(n, maze, f):
+    try:
+        for i in range(n):
+            for j in range(n):
+                if j != 0:
+                    f.write('.')
+                f.write('%3s' % (maze[(i, j)]))
+            f.write('\n')
+    except:
+        raise('Cannot write the map to file')
 
-    curState = GameState.initial_state(maze, n, "AIAgentII")
+
+def run(
+    filename=None,  # File used as layout
+    N=10,  # Size of the map
+    W=5,  # Number of Wumpuses
+    P=5,  # Numper of Pits
+    G=None,  # Numper of golds
+    auto=1,  # The game run automatically
+    fps=15
+):
+    if (filename != None):
+        n, maze = try_to_load(filename)
+    else:
+        n, maze = map_generator(N, W, P, G)
+
+    curState = GameState.initial_state(maze, n)
     ui = GameGUI(n, n)
+    ui.fps = fps
+    stepModes = not auto
     result = dict({
-        'Result': '',
+        'Result': 'Interupted',
         'Score': 0,
         'Gold Picked': 0,
         'Wumpus Killed': 0
     })
 
+    log = open('log.txt', 'w')
+    write_maze(n, maze, log)
+    desc = ''
+
     isRunning = True
-    waitforButt = False
+    ui.open_screen()
     while isRunning:
-        isRunning = ui.checkEvent(waitforButt)
+        "Handling events"
+        if stepModes:
+            isRunning = ui.waitForTheButton()
+        else:
+            isRunning = ui.checkEvent()
 
         if (curState.isOver() != None):
+            ui.draw(curState)
             isRunning = False
             result['Score'] = curState.score
             result['Result'] = curState.isOver()
             result['Wumpus Killed'] = curState.agent.wumpus_killed
             result['Gold Picked'] = curState.agent.gold
         else:
+            "Get next action"
             next_act = curState.agent.get_action(curState)
-            print("Take action: ",next_act)
+            desc = curState.agent.description + '\nAction: ' + str(next_act)
+
+            "Draw current state"
+            ui.draw(curState)
+
+            "Render the description "
+            if (stepModes):
+                ui.draw_description(curState.agent.description)
+
+            "Store the output of the agent"
+            log.write(desc)
+
+            "Generate next stage"
             curState = GameState.get_successor(curState, next_act)
-            ui.draw(curState, next_act)
+
+    log.close()
     print('-------------------------')
     print("\n".join([str(e) + ": " + str(result[e]) for e in result]))
     print('-------------------------')
 
 
+def main(argstring):
+    argv = argstring.split()
+    if argv[0] in ["python", "python3"]:
+        argv = argv[1:]
+    args = readCommand(argv[1:])
+    run(**args)
+
+
 if __name__ == "__main__":
-    run()
+    args = readCommand(sys.argv[1:])  # Get game components based on input
+    run(**args)

@@ -31,8 +31,8 @@ class Actions:
         "Shoot West": (0, -1)
     }
 
-    PICK_GOLD = 2
-    EXIT = 3
+    PICK_GOLD = "Pick Gold"
+    EXIT = "Exit"
 
     _directionsAsList = _directions.items()
 
@@ -112,7 +112,7 @@ class Agent:
 
     def move(self, direction):
         self.dir = direction
-        #self.actions.append(direction)
+        # self.actions.append(direction)
         self.pos = Actions.getSuccessor(self.pos, direction)
 
     def __repr__(self):

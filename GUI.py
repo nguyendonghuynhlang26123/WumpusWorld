@@ -21,6 +21,7 @@ class GameGUI:
         self.graphic_width = self.rows * WIDTH
         self.graphic_height = self.cols * WIDTH + SIDE_BAR
         self.score_font = pg.font.SysFont('comicsans', 30)  # Font object
+        self.desc_font = pg.font.SysFont('comicsans', 30)
 
         self.imgs = dict({})
         self.imgs['A'] = {
@@ -40,17 +41,25 @@ class GameGUI:
         self.screen = pg.display.set_mode(
             (self.graphic_width, self.graphic_height))
 
-    def checkEvent(self, waitForButt):
+        #pg.key.set_repeat(1, 50)
+
+    def checkEvent(self):
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return False
-            while (waitForButt):
-                if event.type == pg.KEYDOWN:
-                    return True           
         return True
 
-    def draw(self, curState, agent_action):
-        # self.clock.tick(self.fps)
+    def waitForTheButton(self):
+        while True:
+            for event in pg.event.get():
+                if (event.type == pg.KEYDOWN):
+                    return True
+                elif event.type == pg.QUIT:
+                    return False
+        return True
+
+    def draw(self, curState):
+        self.clock.tick(self.fps)
         self.screen.fill((0, 0, 0))
 
         "Draw rooms"
@@ -91,9 +100,23 @@ class GameGUI:
         self.screen.blit(self.imgs['A'][agent.dir],
                          (j*WIDTH, (self.cols - 1 - i)*WIDTH))
 
-    def dead_wumpus(self, pos):
-        i, j = pos
-        world_pos = (j*WIDTH, (self.cols - 1 - i)*WIDTH)
+    def open_screen(self):
+        self.screen.fill((0, 0, 0))
+        font = pg.font.SysFont('comicsans', 40)
+        text = font.render(
+            "Press any key to continue the process...", True, (255, 255, 255))
+        self.screen.blit(text, (WIDTH, self.graphic_width/2))
+        pg.display.update()
 
-    def agent_shooting(self, agent):
-        i, j = agent.pos
+    def draw_description(self, description):
+        "Print the goal of the actions"
+        goal = description[description.find('Goal') + 5:]
+
+        if (goal == ''):
+            print("No goal")
+            return
+
+        text = self.desc_font.render(
+            goal, True, (162, 213, 242))
+        self.screen.blit(text, (WIDTH * 2, self.rows * WIDTH))
+        pg.display.update()
