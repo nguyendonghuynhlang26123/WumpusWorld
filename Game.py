@@ -205,6 +205,7 @@ def run():
             result['Gold Picked'] = curState.agent.gold
         else:
             next_act = curState.agent.get_action(curState)
+            print("Take action: ",next_act)
             curState = GameState.get_successor(curState, next_act)
             ui.draw(curState, next_act)
     print('-------------------------')

@@ -247,10 +247,11 @@ class AIAgentII(AIPlayer):
             return self.actions.pop(0)
 
         pos = state.agent.pos
+        print("Pos: ",pos)
         adjs = GameState.get_adjs(state, pos)
 
-        print(pos, '-----')
-
+        #(pos, '-----')
+        print("Percept: ",state.explored[pos])
         "Add KB"
         if 'S' in state.explored[pos]:
             self.handle_stench(pos, adjs)
@@ -264,7 +265,7 @@ class AIAgentII(AIPlayer):
             self.handle_breeze(pos, adjs)
         else:
             self.handle_not_breeze(pos, adjs)
-
+        print("KB: ", self.KB.KB)
         "Update safe places"
         for adj, _ in adjs:
             if (self.is_safe(adj)) and adj not in self.visited and adj not in self.safe_places:
@@ -282,7 +283,7 @@ class AIAgentII(AIPlayer):
         start = time.time()
         if ('G' in state.explored[pos]):
             return Actions.PICK_GOLD
-        print('Pick golds takes %d seconds' % (time.time() - start))
+        #print('Pick golds takes %d seconds' % (time.time() - start))
 
         if (self.safe_places != []):
             self.actions = ucs(state, self.safe_places[0])
@@ -293,7 +294,7 @@ class AIAgentII(AIPlayer):
             return Actions.EXIT
         else:
             self.iLeaving = True
-            print("EXIT", state.exit)
+            print("EXIT from: ",state.agent.pos, " to: ", state.exit)
             self.actions = ucs(state, state.exit)
             return self.actions.pop(0)
 
