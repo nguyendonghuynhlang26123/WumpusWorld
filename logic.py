@@ -112,38 +112,45 @@ class AIAgent(Agent):
                 return Directions.EAST, (row, col + 1)
 
         if ((row + 1, col), Directions.NORTH) in adjs:
-            if self.KB.check(["W" + str(row) + "," + str(col - 1)]) and self.KB.check(
-                    ["~S" + str(row + 1) + "," + str(col - 1)]) or self.KB.check(
+            if (self.KB.check(["W" + str(row) + "," + str(col - 1)]) and self.KB.check(
+                    ["~S" + str(row + 1) + "," + str(col - 1)])) or (self.KB.check(
                     ["W" + str(row) + "," + str(col + 1)]) and self.KB.check(
-                    ["~S" + str(row + 1) + "," + str(col + 1)]):
+                    ["~S" + str(row + 1) + "," + str(col + 1)])):
                 return Directions.NORTH, (row + 1, col)
 
         if ((row, col - 1), Directions.WEST) in adjs:
-            if self.KB.check(["W" + str(row - 1) + "," + str(col)]) and self.KB.check(
-                    ["~S" + str(row - 1) + "," + str(col - 1)]) or self.KB.check(
+            if (self.KB.check(["W" + str(row - 1) + "," + str(col)]) and self.KB.check(
+                    ["~S" + str(row - 1) + "," + str(col - 1)])) or (self.KB.check(
                     ["W" + str(row + 1) + "," + str(col)]) and self.KB.check(
-                    ["~S" + str(row + 1) + "," + str(col - 1)]):
+                    ["~S" + str(row + 1) + "," + str(col - 1)])):
                 return Directions.WEST, (row, col - 1)
 
         if ((row - 1, col), Directions.SOUTH) in adjs:
-            if self.KB.check(["W" + str(row) + "," + str(col - 1)]) and self.KB.check(
-                    ["~S" + str(row - 1) + "," + str(col - 1)]) or self.KB.check(
+            if (self.KB.check(["W" + str(row) + "," + str(col - 1)]) and self.KB.check(
+                    ["~S" + str(row - 1) + "," + str(col - 1)])) or (self.KB.check(
                     ["W" + str(row) + "," + str(col + 1)]) and self.KB.check(
-                    ["~S" + str(row - 1) + "," + str(col + 1)]):
+                    ["~S" + str(row - 1) + "," + str(col + 1)])):
                 return Directions.SOUTH, (row - 1, col)
 
         return None, None
 
-    def recheck_stenches(self, state):
-        possible_safe = []
-        for pos in self.stenches:
-            if 'S' in state.explored[pos]:
-                adjs = GameState.get_adjs(state, pos)
-                _, target_pos = self.wumpus_check(pos, adjs)
-                if (target_pos != None and target_pos not in self.checked_places):
-                    possible_safe.append(pos)
+    # def recheck_stenches(self, state):
+    #     possible_safe = []
+    #     for pos in self.stenches:
+    #         if 'S' in state.explored[pos]:
+    #             adjs = GameState.get_adjs(state, pos)
+    #             _, target_pos = self.wumpus_check(pos, adjs)
+    #             if (target_pos != None and target_pos not in self.checked_places):
+    #                 possible_safe.append(pos)
 
-        return possible_safe
+    #     return possible_safe
+
+    def nearest_safe_place(self):
+        dist = []
+        for room in self.safe_places:
+            dist.append(abs(self.pos[0] - room[0]) +
+                        abs(self.pos[1] - room[1]))
+        return self.safe_places[dist.index(min(dist))]
 
     def get_action(self, state):
         pos = state.agent.pos
@@ -200,7 +207,7 @@ class AIAgent(Agent):
 
         "Find the next place to move"
         if (self.safe_places != []):
-            self.actions = ucs(state, self.safe_places[0])
+            self.actions = ucs(state, self.nearest_safe_place())
             self.description += 'Goal: Move to the next unvisited safe place: ' + \
                 name(self.safe_places[0])
             return self.actions.pop(0)
